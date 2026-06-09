@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Markov – Portafolio Cartera Zona Milagro</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f4f8;color:#1a2332;min-height:100vh}
+
+  /* HEADER */
+  .header{background:linear-gradient(135deg,#0d2140 0%,#1a3a6b 60%,#1e4d8c 100%);color:#fff;padding:20px 28px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 20px rgba(0,0,0,.35)}
+  .header-left h1{font-size:1.35rem;font-weight:700;letter-spacing:.3px}
+  .header-left p{font-size:.78rem;opacity:.75;margin-top:3px}
+  .header-right{text-align:right;font-size:.78rem;opacity:.8}
+  .badge{display:inline-block;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:3px 12px;font-size:.7rem;margin-top:6px;letter-spacing:.5px}
+
+  /* FILTERS */
+  .filters-bar{background:#fff;padding:14px 28px;display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;border-bottom:1px solid #e2e8f0;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+  .filter-group{display:flex;flex-direction:column;gap:4px;min-width:140px}
+  .filter-group label{font-size:.68rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.5px}
+  .filter-group select{border:1.5px solid #cbd5e1;border-radius:8px;padding:7px 10px;font-size:.82rem;color:#1a2332;background:#fafbfc;cursor:pointer;outline:none;transition:border .2s}
+  .filter-group select:focus{border-color:#2563eb}
+  .btn-reset{padding:8px 18px;background:#ef4444;color:#fff;border:none;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;align-self:flex-end;transition:background .2s}
+  .btn-reset:hover{background:#dc2626}
+
+  /* MAIN */
+  .main{padding:22px 28px;display:flex;flex-direction:column;gap:22px}
+
+  /* KPI CARDS */
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .kpi-card{background:#fff;border-radius:14px;padding:20px 22px;box-shadow:0 2px 12px rgba(0,0,0,.07);border-left:5px solid #ccc;position:relative;overflow:hidden;transition:transform .15s,box-shadow .15s}
+  .kpi-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.12)}
+  .kpi-card::before{content:'';position:absolute;right:-20px;top:-20px;width:90px;height:90px;border-radius:50%;opacity:.08}
+  .kpi-card.yellow{border-left-color:#f59e0b}.kpi-card.yellow::before{background:#f59e0b}
+  .kpi-card.green{border-left-color:#10b981}.kpi-card.green::before{background:#10b981}
+  .kpi-card.red{border-left-color:#ef4444}.kpi-card.red::before{background:#ef4444}
+  .kpi-card.blue{border-left-color:#2563eb}.kpi-card.blue::before{background:#2563eb}
+  .kpi-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#64748b;margin-bottom:8px}
+  .kpi-value{font-size:2rem;font-weight:800;line-height:1}
+  .kpi-card.yellow .kpi-value{color:#d97706}
+  .kpi-card.green .kpi-value{color:#059669}
+  .kpi-card.red .kpi-value{color:#dc2626}
+  .kpi-card.blue .kpi-value{color:#1d4ed8}
+  .kpi-meta{margin-top:8px;display:flex;align-items:center;gap:6px;font-size:.75rem;color:#64748b}
+  .arrow{font-size:1rem}
+  .arrow.up{color:#10b981}.arrow.down{color:#ef4444}.arrow.neutral{color:#94a3b8}
+  .kpi-sub{font-size:.65rem;color:#94a3b8;margin-top:5px;word-break:break-word;line-height:1.4}
+
+  /* CHART SECTION */
+  .chart-card{background:#fff;border-radius:14px;padding:22px;box-shadow:0 2px 12px rgba(0,0,0,.07)}
+  .chart-card h2{font-size:.95rem;font-weight:700;color:#1a2332;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+  .chart-card h2 span{font-size:.72rem;font-weight:500;color:#64748b;background:#f1f5f9;padding:3px 10px;border-radius:20px}
+  .chart-wrapper{position:relative;height:460px;max-width:560px;margin:0 auto;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px}
+
+  /* LEGEND */
+  .legend-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+  .leg-item{display:flex;align-items:center;gap:7px;font-size:.78rem;color:#374151;font-weight:600}
+  .leg-dot{width:14px;height:14px;border-radius:3px}
+
+  /* TABLE */
+  .table-card{background:#fff;border-radius:14px;padding:22px;box-shadow:0 2px 12px rgba(0,0,0,.07)}
+  .table-card h2{font-size:.95rem;font-weight:700;color:#1a2332;margin-bottom:14px}
+  .table-wrap{overflow-x:auto;border-radius:8px;border:1px solid #e2e8f0}
+  table{width:100%;border-collapse:collapse;font-size:.78rem}
+  thead tr{background:#1a3a6b;color:#fff}
+  thead th{padding:10px 12px;text-align:left;font-weight:600;letter-spacing:.3px;white-space:nowrap}
+  tbody tr{border-bottom:1px solid #f1f5f9;transition:background .1s}
+  tbody tr:hover{background:#f8fafc}
+  tbody tr:last-child{border-bottom:none}
+  tbody td{padding:9px 12px;white-space:nowrap}
+  .badge-cal{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.68rem;font-weight:700;background:#e0e7ff;color:#3730a3}
+  .val-lib{color:#059669;font-weight:700}
+  .val-cont{color:#d97706;font-weight:700}
+  .val-det{color:#dc2626;font-weight:700}
+  .val-total{color:#1d4ed8;font-weight:700}
+  .val-prom{color:#7c3aed;font-weight:700}
+
+  /* TABLA RESUMEN */
+  .res-table{width:100%;border-collapse:collapse;font-size:.78rem}
+  .res-table thead tr{background:#1a3a6b;color:#fff}
+  .res-table thead th{padding:10px 11px;text-align:center;font-weight:700;white-space:nowrap;border-right:1px solid rgba(255,255,255,.15)}
+  .res-table thead th:first-child{text-align:left;min-width:120px}
+  .res-table thead th.tramo-h{background:#0d2140}
+  .res-table tbody tr{border-bottom:1px solid #f1f5f9}
+  .res-table tbody tr:hover{background:#f0f7ff}
+  .res-table tbody td{padding:9px 11px;text-align:center;border-right:1px solid #e2e8f0;white-space:nowrap}
+  .res-table tbody td:first-child{text-align:left;font-weight:700;color:#1a2332;background:#f8fafc;border-right:2px solid #cbd5e1}
+  .res-table .tienda-row td:first-child{background:#e0e7ff;color:#3730a3;font-size:.8rem}
+  /* Heat coloring para celdas */
+  .heat-hi{background:#d1fae5!important;color:#065f46;font-weight:800}
+  .heat-md{background:#fef9c3!important;color:#713f12;font-weight:700}
+  .heat-lo{background:#fee2e2!important;color:#991b1b;font-weight:700}
+  .cell-pair{display:flex;flex-direction:column;gap:1px;align-items:center}
+  .cell-cont{font-weight:800;font-size:.8rem}
+  .cell-lib{font-size:.72rem;color:#059669;font-weight:600}
+  .cell-cont.hi{color:#1d4ed8}
+  .cell-cont.md{color:#d97706}
+  .cell-cont.lo{color:#dc2626}
+
+  /* FOOTER */
+  .footer{text-align:center;padding:14px;font-size:.7rem;color:#94a3b8;border-top:1px solid #e2e8f0;margin-top:10px}
+
+  @media(max-width:900px){
+    .kpi-row{grid-template-columns:repeat(2,1fr)}
+    .main{padding:14px 12px}
+    .filters-bar{padding:10px 12px}
+  }
+  @media(max-width:520px){
+    .kpi-row{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>📊 Dashboard Ejecutivo – Análisis de Transición Markov</h1>
+    <p>Portafolio de Cartera por Calificación Mensual · Zona Milagro</p>
+  </div>
+  <div class="header-right">
+    <div><strong>MARCIMEX S.A.</strong></div>
+    <div>Zona Milagro – 5 Tiendas</div>
+    <div class="badge">Oct 2025 – May 2026 &nbsp;|&nbsp; 8 Meses</div>
+  </div>
+</div>
+
+<!-- FILTROS -->
+<div class="filters-bar">
+  <div class="filter-group">
+    <label>Tienda</label>
+    <select id="fTienda" onchange="update()">
+      <option value="ALL">Todas las Tiendas</option>
+      <option>BABAHOYO</option>
+      <option>EL TRIUNFO</option>
+      <option>MILAGRO II</option>
+      <option>MILAGRO III</option>
+      <option>VINCES</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Calificación</label>
+    <select id="fCal" onchange="update()">
+      <option value="ALL">Todas las Calificaciones</option>
+      <option>A</option><option>AA</option><option>B</option><option>C</option>
+      <option>D</option><option>E</option><option>E1</option><option>E2</option><option>E3</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Mes</label>
+    <select id="fMes" onchange="update()">
+      <option value="ALL">Todos los Meses</option>
+      <option>Octubre 2025</option><option>Noviembre 2025</option><option>Diciembre 2025</option>
+      <option>Enero 2026</option><option>Febrero 2026</option><option>Marzo 2026</option>
+      <option>Abril 2026</option><option>Mayo 2026</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Año</label>
+    <select id="fAnio" onchange="update()">
+      <option value="ALL">Todos</option>
+      <option value="2025">2025</option>
+      <option value="2026">2026</option>
+    </select>
+  </div>
+  <button class="btn-reset" onclick="resetFilters()">↺ Reiniciar</button>
+</div>
+
+<div class="main">
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi-card yellow">
+      <div class="kpi-label">% CONTIENE PROMEDIO</div>
+      <div class="kpi-value" id="kpiCont">—</div>
+      <div class="kpi-meta"><span class="arrow" id="arrCont">—</span>&nbsp;<span id="trendCont" style="font-size:.76rem"></span></div>
+      <div class="kpi-sub" id="subCont">Σ Contiene ÷ N meses</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">% LIBERA PROMEDIO</div>
+      <div class="kpi-value" id="kpiLib">—</div>
+      <div class="kpi-meta"><span class="arrow" id="arrLib">—</span>&nbsp;<span id="trendLib" style="font-size:.76rem"></span></div>
+      <div class="kpi-sub" id="subLib">Σ Libera ÷ N meses</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">% DETERIORA PROMEDIO</div>
+      <div class="kpi-value" id="kpiDet">—</div>
+      <div class="kpi-meta"><span class="arrow" id="arrDet">—</span>&nbsp;<span id="trendDet" style="font-size:.76rem"></span></div>
+      <div class="kpi-sub" id="subDet">Σ Deteriora ÷ N meses</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">CONTIENE TOTAL (PROM. CONT + PROM. LIB)</div>
+      <div class="kpi-value" id="kpiTotal">—</div>
+      <div class="kpi-meta"><span class="arrow" id="arrTotal">—</span>&nbsp;<span id="trendTotal" style="font-size:.76rem"></span></div>
+      <div class="kpi-sub" id="subTotal">= Prom.Contiene + Prom.Libera</div>
+    </div>
+  </div>
+
+  <!-- GRÁFICO PRINCIPAL -->
+  <div class="chart-card">
+    <h2>📈 Evolución Markov Mensual <span id="chartSubtitle">Todas las Tiendas · Todas las Calificaciones</span></h2>
+    <div class="legend-row">
+      <div class="leg-item"><div class="leg-dot" style="background:#f59e0b"></div>CONTIENE</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#10b981"></div>LIBERA</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#ef4444"></div>DETERIORA</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#2563eb"></div>CONTIENE TOTAL (Cont + Lib)</div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:10px;font-size:.75rem;color:#64748b">
+        <span>⟷ Ancho gráfico:</span>
+        <input type="range" id="widthSlider" min="400" max="1100" value="560" step="20"
+          style="width:120px;accent-color:#2563eb"
+          oninput="resizeChart(this.value)">
+        <span id="widthLabel" style="font-weight:700;color:#1a2332;min-width:55px">560px</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;font-size:.75rem;color:#64748b">
+        <span>↕ Alto:</span>
+        <input type="range" id="heightSlider" min="250" max="650" value="460" step="20"
+          style="width:100px;accent-color:#10b981"
+          oninput="resizeChartH(this.value)">
+        <span id="heightLabel" style="font-weight:700;color:#1a2332;min-width:50px">460px</span>
+      </div>
+    </div>
+    <div class="chart-wrapper">
+      <canvas id="markovChart"></canvas>
+    </div>
+  </div>
+
+  <!-- TABLA DETALLADA -->
+  <div class="table-card">
+    <h2>📋 Tabla Detallada <span id="tableCount" style="font-size:.75rem;color:#64748b;font-weight:500"></span></h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Tienda</th>
+            <th>Mes</th>
+            <th>Calificación</th>
+            <th>% Libera</th>
+            <th>% Contiene</th>
+            <th>% Deteriora</th>
+            <th>% Cont. Total</th>
+            <th>Prom. Histórico</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TABLA RESUMEN POR TIENDA × TRAMO (VERTICAL) -->
+  <div class="table-card">
+    <h2>📊 Promedio Histórico por Tienda y Tramo
+      <span style="font-size:.72rem;color:#64748b;font-weight:500">
+        Media aritmética simple · Σ(% mensual) ÷ N meses · Responde a los filtros
+      </span>
+    </h2>
+    <div class="table-wrap">
+      <table id="resumenTable">
+        <thead>
+          <tr>
+            <th style="min-width:140px;text-align:left">TIENDA</th>
+            <th style="min-width:90px;text-align:center">TRAMO</th>
+            <th style="min-width:160px;text-align:center">% CONTIENE PROMEDIO</th>
+            <th style="min-width:160px;text-align:center">% LIBERA PROMEDIO</th>
+          </tr>
+        </thead>
+        <tbody id="resumenBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="footer">ElhyAI Consultores &amp; Educación Digital · Análisis de Transición Markov · Zona Milagro, Ecuador</div>
+
+<script>
+// ===== DATOS EMBEBIDOS =====
+const RAW = [{"mes":"Octubre 2025","cal":"A","tienda":"BABAHOYO","si":211596.22,"sd":69710.47,"sc":72067.03,"sl":69818.72,"pd":32.95,"pc":34.06,"pl":33.0,"pct":67.06},{"mes":"Octubre 2025","cal":"AA","tienda":"BABAHOYO","si":2576744.2,"sd":135959.87,"sc":2435895.36,"sl":4888.97,"pd":5.28,"pc":94.53,"pl":0.19,"pct":94.72},{"mes":"Octubre 2025","cal":"B","tienda":"BABAHOYO","si":123098.0,"sd":59796.66,"sc":36721.69,"sl":26579.65,"pd":48.58,"pc":29.83,"pl":21.59,"pct":51.42},{"mes":"Octubre 2025","cal":"C","tienda":"BABAHOYO","si":68873.82,"sd":43031.72,"sc":18218.48,"sl":7623.62,"pd":62.48,"pc":26.45,"pl":11.07,"pct":37.52},{"mes":"Octubre 2025","cal":"D","tienda":"BABAHOYO","si":55903.1,"sd":41761.35,"sc":9250.27,"sl":4891.48,"pd":74.7,"pc":16.55,"pl":8.75,"pct":25.3},{"mes":"Octubre 2025","cal":"E","tienda":"BABAHOYO","si":33919.82,"sd":29127.31,"sc":2380.78,"sl":2411.73,"pd":85.87,"pc":7.02,"pl":7.11,"pct":14.13},{"mes":"Octubre 2025","cal":"E1","tienda":"BABAHOYO","si":25965.7,"sd":14647.72,"sc":3700.52,"sl":7617.46,"pd":56.41,"pc":14.25,"pl":29.34,"pct":43.59},{"mes":"Octubre 2025","cal":"E2","tienda":"BABAHOYO","si":32930.42,"sd":5.44,"sc":32924.98,"sl":0,"pd":0.02,"pc":99.98,"pl":0.0,"pct":99.98},{"mes":"Octubre 2025","cal":"E3","tienda":"BABAHOYO","si":33332.74,"sd":0,"sc":33332.74,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Octubre 2025","cal":"A","tienda":"EL TRIUNFO","si":191538.26,"sd":40945.94,"sc":94407.24,"sl":56185.08,"pd":21.38,"pc":49.29,"pl":29.33,"pct":78.62},{"mes":"Octubre 2025","cal":"AA","tienda":"EL TRIUNFO","si":1562475.81,"sd":116782.52,"sc":1442850.67,"sl":2842.62,"pd":7.47,"pc":92.34,"pl":0.18,"pct":92.52},{"mes":"Octubre 2025","cal":"B","tienda":"EL TRIUNFO","si":108653.21,"sd":46164.43,"sc":32321.82,"sl":30166.96,"pd":42.49,"pc":29.75,"pl":27.76,"pct":57.51},{"mes":"Octubre 2025","cal":"C","tienda":"EL TRIUNFO","si":22863.86,"sd":13145.13,"sc":5482.45,"sl":4236.28,"pd":57.49,"pc":23.98,"pl":18.53,"pct":42.51},{"mes":"Octubre 2025","cal":"D","tienda":"EL TRIUNFO","si":34143.26,"sd":15930.4,"sc":10698.5,"sl":7514.36,"pd":46.66,"pc":31.33,"pl":22.01,"pct":53.34},{"mes":"Octubre 2025","cal":"E","tienda":"EL TRIUNFO","si":27798.89,"sd":23570.96,"sc":2176.37,"sl":2051.56,"pd":84.79,"pc":7.83,"pl":7.38,"pct":15.21},{"mes":"Octubre 2025","cal":"E1","tienda":"EL TRIUNFO","si":12601.0,"sd":9919.8,"sc":2295.63,"sl":385.57,"pd":78.72,"pc":18.22,"pl":3.06,"pct":21.28},{"mes":"Octubre 2025","cal":"E2","tienda":"EL TRIUNFO","si":17747.05,"sd":0.41,"sc":17187.07,"sl":559.57,"pd":0.0,"pc":96.84,"pl":3.15,"pct":99.99},{"mes":"Octubre 2025","cal":"E3","tienda":"EL TRIUNFO","si":643.13,"sd":0,"sc":643.13,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Octubre 2025","cal":"A","tienda":"MILAGRO II","si":174768.84,"sd":40721.41,"sc":68085.82,"sl":65961.61,"pd":23.3,"pc":38.96,"pl":37.74,"pct":76.7},{"mes":"Octubre 2025","cal":"AA","tienda":"MILAGRO II","si":1642625.69,"sd":156807.8,"sc":1481120.16,"sl":4697.73,"pd":9.55,"pc":90.17,"pl":0.29,"pct":90.46},{"mes":"Octubre 2025","cal":"B","tienda":"MILAGRO II","si":88370.68,"sd":54870.21,"sc":24378.35,"sl":9122.12,"pd":62.09,"pc":27.59,"pl":10.32,"pct":37.91},{"mes":"Octubre 2025","cal":"C","tienda":"MILAGRO II","si":34949.49,"sd":23987.63,"sc":8164.69,"sl":2797.17,"pd":68.64,"pc":23.36,"pl":8.0,"pct":31.36},{"mes":"Octubre 2025","cal":"D","tienda":"MILAGRO II","si":50119.89,"sd":31399.17,"sc":15653.98,"sl":3066.74,"pd":62.65,"pc":31.23,"pl":6.12,"pct":37.35},{"mes":"Octubre 2025","cal":"E","tienda":"MILAGRO II","si":22155.4,"sd":13740.29,"sc":8415.11,"sl":0,"pd":62.02,"pc":37.98,"pl":0.0,"pct":37.98},{"mes":"Octubre 2025","cal":"E1","tienda":"MILAGRO II","si":27088.55,"sd":24295.71,"sc":2792.84,"sl":0,"pd":89.69,"pc":10.31,"pl":0.0,"pct":10.31},{"mes":"Octubre 2025","cal":"E2","tienda":"MILAGRO II","si":25313.2,"sd":1.23,"sc":25311.97,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Octubre 2025","cal":"E3","tienda":"MILAGRO II","si":0,"sd":0,"sc":0,"sl":0,"pd":0,"pc":0,"pl":0,"pct":0},{"mes":"Octubre 2025","cal":"A","tienda":"MILAGRO III","si":46434.42,"sd":13921.0,"sc":17071.89,"sl":15441.53,"pd":29.98,"pc":36.77,"pl":33.25,"pct":70.02},{"mes":"Octubre 2025","cal":"AA","tienda":"MILAGRO III","si":502275.94,"sd":47644.14,"sc":451953.84,"sl":2677.96,"pd":9.49,"pc":89.98,"pl":0.53,"pct":90.51},{"mes":"Octubre 2025","cal":"B","tienda":"MILAGRO III","si":22494.24,"sd":7550.8,"sc":4738.87,"sl":10204.57,"pd":33.57,"pc":21.07,"pl":45.37,"pct":66.44},{"mes":"Octubre 2025","cal":"C","tienda":"MILAGRO III","si":5637.37,"sd":5637.37,"sc":0,"sl":0,"pd":100.0,"pc":0.0,"pl":0.0,"pct":0.0},{"mes":"Octubre 2025","cal":"D","tienda":"MILAGRO III","si":15176.08,"sd":12510.45,"sc":2665.63,"sl":0,"pd":82.44,"pc":17.56,"pl":0.0,"pct":17.56},{"mes":"Octubre 2025","cal":"E","tienda":"MILAGRO III","si":2204.31,"sd":0,"sc":2204.31,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Octubre 2025","cal":"E1","tienda":"MILAGRO III","si":10877.7,"sd":9793.59,"sc":1084.11,"sl":0,"pd":90.03,"pc":9.97,"pl":0.0,"pct":9.97},{"mes":"Octubre 2025","cal":"E2","tienda":"MILAGRO III","si":2389.19,"sd":0,"sc":2389.19,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Octubre 2025","cal":"E3","tienda":"MILAGRO III","si":0,"sd":0,"sc":0,"sl":0,"pd":0,"pc":0,"pl":0,"pct":0},{"mes":"Octubre 2025","cal":"A","tienda":"VINCES","si":157262.05,"sd":46834.49,"sc":40374.65,"sl":70052.91,"pd":29.78,"pc":25.67,"pl":44.55,"pct":70.22},{"mes":"Octubre 2025","cal":"AA","tienda":"VINCES","si":2123378.31,"sd":89186.16,"sc":2028409.83,"sl":5782.32,"pd":4.2,"pc":95.53,"pl":0.27,"pct":95.8},{"mes":"Octubre 2025","cal":"B","tienda":"VINCES","si":70365.42,"sd":34094.21,"sc":20060.97,"sl":16210.24,"pd":48.45,"pc":28.51,"pl":23.04,"pct":51.55},{"mes":"Octubre 2025","cal":"C","tienda":"VINCES","si":34019.76,"sd":20873.68,"sc":9117.34,"sl":4028.74,"pd":61.36,"pc":26.8,"pl":11.84,"pct":38.64},{"mes":"Octubre 2025","cal":"D","tienda":"VINCES","si":37129.27,"sd":19479.87,"sc":8389.77,"sl":9259.63,"pd":52.46,"pc":22.6,"pl":24.94,"pct":47.54},{"mes":"Octubre 2025","cal":"E","tienda":"VINCES","si":25873.35,"sd":19894.96,"sc":719.34,"sl":5259.05,"pd":76.89,"pc":2.78,"pl":20.33,"pct":23.11},{"mes":"Octubre 2025","cal":"E1","tienda":"VINCES","si":20032.7,"sd":13455.6,"sc":2808.83,"sl":3768.27,"pd":67.17,"pc":14.02,"pl":18.81,"pct":32.83},{"mes":"Octubre 2025","cal":"E2","tienda":"VINCES","si":10245.38,"sd":0,"sc":10245.38,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Octubre 2025","cal":"E3","tienda":"VINCES","si":179.87,"sd":0,"sc":179.87,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Noviembre 2025","cal":"A","tienda":"BABAHOYO","si":208685.3,"sd":66219.8,"sc":60088.71,"sl":82376.79,"pd":31.73,"pc":28.79,"pl":39.47,"pct":68.26},{"mes":"Noviembre 2025","cal":"AA","tienda":"BABAHOYO","si":2725819.07,"sd":127595.18,"sc":2585729.8,"sl":12494.09,"pd":4.68,"pc":94.86,"pl":0.46,"pct":95.32},{"mes":"Noviembre 2025","cal":"B","tienda":"BABAHOYO","si":118582.03,"sd":60274.77,"sc":40525.24,"sl":17782.02,"pd":50.83,"pc":34.17,"pl":15.0,"pct":49.17},{"mes":"Noviembre 2025","cal":"C","tienda":"BABAHOYO","si":68002.49,"sd":37203.18,"sc":17175.6,"sl":13623.71,"pd":54.71,"pc":25.26,"pl":20.03,"pct":45.29},{"mes":"Noviembre 2025","cal":"D","tienda":"BABAHOYO","si":61483.72,"sd":43825.2,"sc":10435.17,"sl":7223.35,"pd":71.28,"pc":16.97,"pl":11.75,"pct":28.72},{"mes":"Noviembre 2025","cal":"E","tienda":"BABAHOYO","si":39823.54,"sd":24579.47,"sc":4873.75,"sl":10370.32,"pd":61.72,"pc":12.24,"pl":26.04,"pct":38.28},{"mes":"Noviembre 2025","cal":"E1","tienda":"BABAHOYO","si":32383.54,"sd":24895.73,"sc":4421.97,"sl":3065.84,"pd":76.88,"pc":13.65,"pl":9.47,"pct":23.12},{"mes":"Noviembre 2025","cal":"E2","tienda":"BABAHOYO","si":14588.29,"sd":0.17,"sc":14588.12,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Noviembre 2025","cal":"E3","tienda":"BABAHOYO","si":32362.26,"sd":0,"sc":32362.26,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Noviembre 2025","cal":"A","tienda":"EL TRIUNFO","si":226184.52,"sd":52100.8,"sc":92243.77,"sl":81839.95,"pd":23.03,"pc":40.78,"pl":36.18,"pct":76.96},{"mes":"Noviembre 2025","cal":"AA","tienda":"EL TRIUNFO","si":1596571.85,"sd":121080.11,"sc":1473428.61,"sl":2063.13,"pd":7.58,"pc":92.29,"pl":0.13,"pct":92.42},{"mes":"Noviembre 2025","cal":"B","tienda":"EL TRIUNFO","si":83138.33,"sd":28417.91,"sc":33323.5,"sl":21396.92,"pd":34.18,"pc":40.08,"pl":25.74,"pct":65.82},{"mes":"Noviembre 2025","cal":"C","tienda":"EL TRIUNFO","si":42074.35,"sd":19513.62,"sc":17432.98,"sl":5127.75,"pd":46.38,"pc":41.43,"pl":12.19,"pct":53.62},{"mes":"Noviembre 2025","cal":"D","tienda":"EL TRIUNFO","si":31834.53,"sd":21879.27,"sc":6568.94,"sl":3386.32,"pd":68.73,"pc":20.63,"pl":10.64,"pct":31.27},{"mes":"Noviembre 2025","cal":"E","tienda":"EL TRIUNFO","si":17717.03,"sd":10791.37,"sc":5963.94,"sl":961.72,"pd":60.91,"pc":33.66,"pl":5.43,"pct":39.09},{"mes":"Noviembre 2025","cal":"E1","tienda":"EL TRIUNFO","si":25487.07,"sd":20115.45,"sc":2824.14,"sl":2547.48,"pd":78.92,"pc":11.08,"pl":10.0,"pct":21.08},{"mes":"Noviembre 2025","cal":"E2","tienda":"EL TRIUNFO","si":9907.77,"sd":0,"sc":9907.77,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Noviembre 2025","cal":"E3","tienda":"EL TRIUNFO","si":624.91,"sd":0,"sc":624.91,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Noviembre 2025","cal":"A","tienda":"MILAGRO II","si":228913.79,"sd":76344.71,"sc":48148.22,"sl":104420.86,"pd":33.35,"pc":21.03,"pl":45.62,"pct":66.65},{"mes":"Noviembre 2025","cal":"AA","tienda":"MILAGRO II","si":1706926.34,"sd":117511.86,"sc":1581135.99,"sl":8278.49,"pd":6.88,"pc":92.63,"pl":0.48,"pct":93.11},{"mes":"Noviembre 2025","cal":"B","tienda":"MILAGRO II","si":68182.61,"sd":41949.87,"sc":16995.92,"sl":9236.82,"pd":61.53,"pc":24.93,"pl":13.55,"pct":38.48},{"mes":"Noviembre 2025","cal":"C","tienda":"MILAGRO II","si":46812.82,"sd":30736.84,"sc":8493.1,"sl":7582.88,"pd":65.66,"pc":18.14,"pl":16.2,"pct":34.34},{"mes":"Noviembre 2025","cal":"D","tienda":"MILAGRO II","si":48574.22,"sd":27232.51,"sc":12037.08,"sl":9304.63,"pd":56.06,"pc":24.78,"pl":19.16,"pct":43.94},{"mes":"Noviembre 2025","cal":"E","tienda":"MILAGRO II","si":23335.09,"sd":17707.68,"sc":3271.07,"sl":2356.34,"pd":75.88,"pc":14.02,"pl":10.1,"pct":24.12},{"mes":"Noviembre 2025","cal":"E1","tienda":"MILAGRO II","si":16161.52,"sd":13598.98,"sc":481.85,"sl":2080.69,"pd":84.14,"pc":2.98,"pl":12.87,"pct":15.85},{"mes":"Noviembre 2025","cal":"E2","tienda":"MILAGRO II","si":24256.5,"sd":0,"sc":23759.64,"sl":496.86,"pd":0.0,"pc":97.95,"pl":2.05,"pct":100.0},{"mes":"Noviembre 2025","cal":"E3","tienda":"MILAGRO II","si":1373.33,"sd":0,"sc":1270.56,"sl":102.77,"pd":0.0,"pc":92.52,"pl":7.48,"pct":100.0},{"mes":"Noviembre 2025","cal":"A","tienda":"MILAGRO III","si":67173.99,"sd":24231.64,"sc":17597.1,"sl":25345.25,"pd":36.07,"pc":26.2,"pl":37.73,"pct":63.93},{"mes":"Noviembre 2025","cal":"AA","tienda":"MILAGRO III","si":551026.01,"sd":51184.95,"sc":498826.65,"sl":1014.41,"pd":9.29,"pc":90.53,"pl":0.18,"pct":90.71},{"mes":"Noviembre 2025","cal":"B","tienda":"MILAGRO III","si":20260.28,"sd":4965.78,"sc":6939.3,"sl":8355.2,"pd":24.51,"pc":34.25,"pl":41.24,"pct":75.49},{"mes":"Noviembre 2025","cal":"C","tienda":"MILAGRO III","si":7521.08,"sd":6173.36,"sc":1206.52,"sl":141.2,"pd":82.08,"pc":16.04,"pl":1.88,"pct":17.92},{"mes":"Noviembre 2025","cal":"D","tienda":"MILAGRO III","si":8211.29,"sd":8211.29,"sc":0,"sl":0,"pd":100.0,"pc":0.0,"pl":0.0,"pct":0.0},{"mes":"Noviembre 2025","cal":"E","tienda":"MILAGRO III","si":10718.46,"sd":6599.77,"sc":4118.69,"sl":0,"pd":61.57,"pc":38.43,"pl":0.0,"pct":38.43},{"mes":"Noviembre 2025","cal":"E1","tienda":"MILAGRO III","si":1054.55,"sd":0,"sc":1054.55,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Noviembre 2025","cal":"E2","tienda":"MILAGRO III","si":9793.76,"sd":0,"sc":9792.58,"sl":1.18,"pd":0.0,"pc":99.99,"pl":0.01,"pct":100.0},{"mes":"Noviembre 2025","cal":"E3","tienda":"MILAGRO III","si":0,"sd":0,"sc":0,"sl":0,"pd":0,"pc":0,"pl":0,"pct":0},{"mes":"Noviembre 2025","cal":"A","tienda":"VINCES","si":157262.05,"sd":46834.49,"sc":40374.65,"sl":70052.91,"pd":29.78,"pc":25.67,"pl":44.55,"pct":70.22},{"mes":"Noviembre 2025","cal":"AA","tienda":"VINCES","si":2123378.31,"sd":89186.16,"sc":2028409.83,"sl":5782.32,"pd":4.2,"pc":95.53,"pl":0.27,"pct":95.8},{"mes":"Noviembre 2025","cal":"B","tienda":"VINCES","si":70365.42,"sd":34094.21,"sc":20060.97,"sl":16210.24,"pd":48.45,"pc":28.51,"pl":23.04,"pct":51.55},{"mes":"Noviembre 2025","cal":"C","tienda":"VINCES","si":34019.76,"sd":20873.68,"sc":9117.34,"sl":4028.74,"pd":61.36,"pc":26.8,"pl":11.84,"pct":38.64},{"mes":"Noviembre 2025","cal":"D","tienda":"VINCES","si":37129.27,"sd":19479.87,"sc":8389.77,"sl":9259.63,"pd":52.46,"pc":22.6,"pl":24.94,"pct":47.54},{"mes":"Noviembre 2025","cal":"E","tienda":"VINCES","si":25873.35,"sd":19894.96,"sc":719.34,"sl":5259.05,"pd":76.89,"pc":2.78,"pl":20.33,"pct":23.11},{"mes":"Noviembre 2025","cal":"E1","tienda":"VINCES","si":20032.7,"sd":13455.6,"sc":2808.83,"sl":3768.27,"pd":67.17,"pc":14.02,"pl":18.81,"pct":32.83},{"mes":"Noviembre 2025","cal":"E2","tienda":"VINCES","si":10245.38,"sd":0,"sc":10245.38,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Noviembre 2025","cal":"E3","tienda":"VINCES","si":179.87,"sd":0,"sc":179.87,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Diciembre 2025","cal":"A","tienda":"BABAHOYO","si":200071.82,"sd":72106.19,"sc":68958.06,"sl":59007.57,"pd":36.04,"pc":34.47,"pl":29.49,"pct":63.96},{"mes":"Diciembre 2025","cal":"AA","tienda":"BABAHOYO","si":2822758.0,"sd":131354.33,"sc":2682406.16,"sl":8997.51,"pd":4.65,"pc":95.03,"pl":0.32,"pct":95.35},{"mes":"Diciembre 2025","cal":"B","tienda":"BABAHOYO","si":106132.58,"sd":56678.67,"sc":34100.44,"sl":15353.47,"pd":53.4,"pc":32.13,"pl":14.47,"pct":46.6},{"mes":"Diciembre 2025","cal":"C","tienda":"BABAHOYO","si":78497.92,"sd":51175.53,"sc":17134.35,"sl":10188.04,"pd":65.19,"pc":21.83,"pl":12.98,"pct":34.81},{"mes":"Diciembre 2025","cal":"D","tienda":"BABAHOYO","si":52347.13,"sd":35946.66,"sc":9763.62,"sl":6636.85,"pd":68.67,"pc":18.65,"pl":12.68,"pct":31.33},{"mes":"Diciembre 2025","cal":"E","tienda":"BABAHOYO","si":36595.16,"sd":27179.39,"sc":7241.34,"sl":2174.43,"pd":74.27,"pc":19.79,"pl":5.94,"pct":25.73},{"mes":"Diciembre 2025","cal":"E1","tienda":"BABAHOYO","si":32554.2,"sd":27207.65,"sc":2840.92,"sl":2505.63,"pd":83.58,"pc":8.73,"pl":7.7,"pct":16.43},{"mes":"Diciembre 2025","cal":"E2","tienda":"BABAHOYO","si":27436.81,"sd":0.62,"sc":27436.19,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Diciembre 2025","cal":"E3","tienda":"BABAHOYO","si":486835.09,"sd":0,"sc":486835.09,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Diciembre 2025","cal":"A","tienda":"EL TRIUNFO","si":232512.91,"sd":67961.27,"sc":102665.57,"sl":61886.07,"pd":29.23,"pc":44.15,"pl":26.62,"pct":70.77},{"mes":"Diciembre 2025","cal":"AA","tienda":"EL TRIUNFO","si":1686937.34,"sd":124965.68,"sc":1558587.11,"sl":3384.55,"pd":7.41,"pc":92.39,"pl":0.2,"pct":92.59},{"mes":"Diciembre 2025","cal":"B","tienda":"EL TRIUNFO","si":85924.87,"sd":38863.98,"sc":21852.24,"sl":25208.65,"pd":45.23,"pc":25.43,"pl":29.34,"pct":54.77},{"mes":"Diciembre 2025","cal":"C","tienda":"EL TRIUNFO","si":46209.76,"sd":16126.24,"sc":19513.95,"sl":10569.57,"pd":34.9,"pc":42.23,"pl":22.87,"pct":65.1},{"mes":"Diciembre 2025","cal":"D","tienda":"EL TRIUNFO","si":25452.74,"sd":18392.84,"sc":3528.9,"sl":3531.0,"pd":72.26,"pc":13.86,"pl":13.87,"pct":27.73},{"mes":"Diciembre 2025","cal":"E","tienda":"EL TRIUNFO","si":26863.58,"sd":17885.2,"sc":7169.61,"sl":1808.77,"pd":66.58,"pc":26.69,"pl":6.73,"pct":33.42},{"mes":"Diciembre 2025","cal":"E1","tienda":"EL TRIUNFO","si":13361.14,"sd":11778.52,"sc":1412.18,"sl":170.44,"pd":88.16,"pc":10.57,"pl":1.28,"pct":11.85},{"mes":"Diciembre 2025","cal":"E2","tienda":"EL TRIUNFO","si":24801.16,"sd":3159.96,"sc":20297.42,"sl":1343.78,"pd":12.74,"pc":81.84,"pl":5.42,"pct":87.26},{"mes":"Diciembre 2025","cal":"E3","tienda":"EL TRIUNFO","si":313161.43,"sd":0,"sc":313161.43,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Diciembre 2025","cal":"A","tienda":"MILAGRO II","si":172677.58,"sd":70556.53,"sc":41132.61,"sl":60988.44,"pd":40.86,"pc":23.82,"pl":35.32,"pct":59.14},{"mes":"Diciembre 2025","cal":"AA","tienda":"MILAGRO II","si":1807332.23,"sd":145711.58,"sc":1657702.24,"sl":3918.41,"pd":8.06,"pc":91.72,"pl":0.22,"pct":91.94},{"mes":"Diciembre 2025","cal":"B","tienda":"MILAGRO II","si":95107.02,"sd":68975.49,"sc":19670.12,"sl":6461.41,"pd":72.52,"pc":20.68,"pl":6.79,"pct":27.47},{"mes":"Diciembre 2025","cal":"C","tienda":"MILAGRO II","si":51908.09,"sd":40307.76,"sc":3470.41,"sl":8129.92,"pd":77.65,"pc":6.69,"pl":15.66,"pct":22.35},{"mes":"Diciembre 2025","cal":"D","tienda":"MILAGRO II","si":42230.49,"sd":23526.81,"sc":9882.9,"sl":8820.78,"pd":55.71,"pc":23.4,"pl":20.89,"pct":44.29},{"mes":"Diciembre 2025","cal":"E","tienda":"MILAGRO II","si":23345.49,"sd":21042.53,"sc":1199.16,"sl":1103.8,"pd":90.14,"pc":5.14,"pl":4.73,"pct":9.87},{"mes":"Diciembre 2025","cal":"E1","tienda":"MILAGRO II","si":13997.8,"sd":9404.44,"sc":3715.39,"sl":877.97,"pd":67.19,"pc":26.54,"pl":6.27,"pct":32.81},{"mes":"Diciembre 2025","cal":"E2","tienda":"MILAGRO II","si":17508.83,"sd":402.31,"sc":16859.3,"sl":247.22,"pd":2.3,"pc":96.29,"pl":1.41,"pct":97.7},{"mes":"Diciembre 2025","cal":"E3","tienda":"MILAGRO II","si":461006.65,"sd":0,"sc":461006.65,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Diciembre 2025","cal":"A","tienda":"MILAGRO III","si":74631.0,"sd":34783.83,"sc":27112.24,"sl":12734.93,"pd":46.61,"pc":36.33,"pl":17.06,"pct":53.39},{"mes":"Diciembre 2025","cal":"AA","tienda":"MILAGRO III","si":602894.59,"sd":28220.18,"sc":574475.01,"sl":199.4,"pd":4.68,"pc":95.29,"pl":0.03,"pct":95.32},{"mes":"Diciembre 2025","cal":"B","tienda":"MILAGRO III","si":30466.81,"sd":18847.81,"sc":6319.66,"sl":5299.34,"pd":61.86,"pc":20.74,"pl":17.39,"pct":38.13},{"mes":"Diciembre 2025","cal":"C","tienda":"MILAGRO III","si":6146.16,"sd":4965.78,"sc":1180.38,"sl":0,"pd":80.79,"pc":19.21,"pl":0.0,"pct":19.21},{"mes":"Diciembre 2025","cal":"D","tienda":"MILAGRO III","si":6173.36,"sd":6158.36,"sc":0,"sl":15.0,"pd":99.76,"pc":0.0,"pl":0.24,"pct":0.24},{"mes":"Diciembre 2025","cal":"E","tienda":"MILAGRO III","si":10529.26,"sd":8525.32,"sc":2003.94,"sl":0,"pd":80.97,"pc":19.03,"pl":0.0,"pct":19.03},{"mes":"Diciembre 2025","cal":"E1","tienda":"MILAGRO III","si":7562.69,"sd":6396.23,"sc":1166.46,"sl":0,"pd":84.58,"pc":15.42,"pl":0.0,"pct":15.42},{"mes":"Diciembre 2025","cal":"E2","tienda":"MILAGRO III","si":19.29,"sd":0,"sc":19.29,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Diciembre 2025","cal":"E3","tienda":"MILAGRO III","si":0,"sd":0,"sc":0,"sl":0,"pd":0,"pc":0,"pl":0,"pct":0},{"mes":"Diciembre 2025","cal":"A","tienda":"VINCES","si":135639.35,"sd":47242.23,"sc":50116.42,"sl":38280.7,"pd":34.83,"pc":36.95,"pl":28.22,"pct":65.17},{"mes":"Diciembre 2025","cal":"AA","tienda":"VINCES","si":2241111.79,"sd":103841.96,"sc":2131003.38,"sl":6266.45,"pd":4.63,"pc":95.09,"pl":0.28,"pct":95.37},{"mes":"Diciembre 2025","cal":"B","tienda":"VINCES","si":67008.35,"sd":32566.48,"sc":22624.94,"sl":11816.93,"pd":48.6,"pc":33.76,"pl":17.64,"pct":51.4},{"mes":"Diciembre 2025","cal":"C","tienda":"VINCES","si":50357.74,"sd":31227.03,"sc":6535.45,"sl":12595.26,"pd":62.01,"pc":12.98,"pl":25.01,"pct":37.99},{"mes":"Diciembre 2025","cal":"D","tienda":"VINCES","si":32264.27,"sd":25449.58,"sc":4866.71,"sl":1947.98,"pd":78.88,"pc":15.08,"pl":6.04,"pct":21.12},{"mes":"Diciembre 2025","cal":"E","tienda":"VINCES","si":18394.64,"sd":12796.77,"sc":1220.82,"sl":4377.05,"pd":69.57,"pc":6.64,"pl":23.8,"pct":30.44},{"mes":"Diciembre 2025","cal":"E1","tienda":"VINCES","si":20494.97,"sd":13573.42,"sc":1688.65,"sl":5232.9,"pd":66.23,"pc":8.24,"pl":25.53,"pct":33.77},{"mes":"Diciembre 2025","cal":"E2","tienda":"VINCES","si":16773.37,"sd":1022.47,"sc":14515.64,"sl":1235.26,"pd":6.1,"pc":86.54,"pl":7.36,"pct":93.9},{"mes":"Diciembre 2025","cal":"E3","tienda":"VINCES","si":118919.46,"sd":0,"sc":118919.46,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Enero 2026","cal":"A","tienda":"BABAHOYO","si":208228.47,"sd":76874.26,"sc":78511.47,"sl":52842.74,"pd":36.92,"pc":37.7,"pl":25.38,"pct":63.08},{"mes":"Enero 2026","cal":"AA","tienda":"BABAHOYO","si":2815651.78,"sd":121042.71,"sc":2690098.61,"sl":4510.46,"pd":4.3,"pc":95.54,"pl":0.16,"pct":95.7},{"mes":"Enero 2026","cal":"B","tienda":"BABAHOYO","si":109765.99,"sd":59518.17,"sc":38243.84,"sl":12003.98,"pd":54.22,"pc":34.84,"pl":10.94,"pct":45.78},{"mes":"Enero 2026","cal":"C","tienda":"BABAHOYO","si":77325.8,"sd":51264.32,"sc":20145.78,"sl":5915.7,"pd":66.3,"pc":26.05,"pl":7.65,"pct":33.7},{"mes":"Enero 2026","cal":"D","tienda":"BABAHOYO","si":58996.9,"sd":43452.5,"sc":10248.02,"sl":5296.38,"pd":73.65,"pc":17.37,"pl":8.98,"pct":26.35},{"mes":"Enero 2026","cal":"E","tienda":"BABAHOYO","si":42717.98,"sd":28890.03,"sc":8242.76,"sl":5585.19,"pd":67.63,"pc":19.3,"pl":13.07,"pct":32.37},{"mes":"Enero 2026","cal":"E1","tienda":"BABAHOYO","si":29584.92,"sd":25214.23,"sc":3171.41,"sl":1199.28,"pd":85.23,"pc":10.72,"pl":4.05,"pct":14.77},{"mes":"Enero 2026","cal":"E2","tienda":"BABAHOYO","si":27027.47,"sd":0,"sc":23684.14,"sl":3343.33,"pd":0.0,"pc":87.63,"pl":12.37,"pct":100.0},{"mes":"Enero 2026","cal":"E3","tienda":"BABAHOYO","si":36057.86,"sd":0,"sc":35636.52,"sl":421.34,"pd":0.0,"pc":98.83,"pl":1.17,"pct":100.0},{"mes":"Enero 2026","cal":"A","tienda":"EL TRIUNFO","si":239502.28,"sd":66867.51,"sc":99950.15,"sl":72684.62,"pd":27.92,"pc":41.73,"pl":30.35,"pct":72.08},{"mes":"Enero 2026","cal":"AA","tienda":"EL TRIUNFO","si":1696166.24,"sd":126803.96,"sc":1566300.1,"sl":3062.18,"pd":7.48,"pc":92.34,"pl":0.18,"pct":92.52},{"mes":"Enero 2026","cal":"B","tienda":"EL TRIUNFO","si":94648.17,"sd":46165.91,"sc":34064.35,"sl":14417.91,"pd":48.78,"pc":35.99,"pl":15.23,"pct":51.22},{"mes":"Enero 2026","cal":"C","tienda":"EL TRIUNFO","si":59260.52,"sd":38265.55,"sc":14293.47,"sl":6701.5,"pd":64.57,"pc":24.12,"pl":11.31,"pct":35.43},{"mes":"Enero 2026","cal":"D","tienda":"EL TRIUNFO","si":19901.15,"sd":16134.66,"sc":3198.27,"sl":568.22,"pd":81.07,"pc":16.07,"pl":2.86,"pct":18.93},{"mes":"Enero 2026","cal":"E","tienda":"EL TRIUNFO","si":22667.71,"sd":19436.1,"sc":1158.03,"sl":2073.58,"pd":85.74,"pc":5.11,"pl":9.15,"pct":14.26},{"mes":"Enero 2026","cal":"E1","tienda":"EL TRIUNFO","si":19137.35,"sd":13501.03,"sc":1609.88,"sl":4026.44,"pd":70.55,"pc":8.41,"pl":21.04,"pct":29.45},{"mes":"Enero 2026","cal":"E2","tienda":"EL TRIUNFO","si":11769.47,"sd":2.76,"sc":11766.71,"sl":0,"pd":0.02,"pc":99.98,"pl":0.0,"pct":99.98},{"mes":"Enero 2026","cal":"E3","tienda":"EL TRIUNFO","si":1381.18,"sd":0,"sc":1381.18,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Enero 2026","cal":"A","tienda":"MILAGRO II","si":191573.42,"sd":72324.63,"sc":75468.39,"sl":43780.4,"pd":37.75,"pc":39.39,"pl":22.85,"pct":62.24},{"mes":"Enero 2026","cal":"AA","tienda":"MILAGRO II","si":1776125.23,"sd":121778.3,"sc":1653254.7,"sl":1092.23,"pd":6.86,"pc":93.08,"pl":0.06,"pct":93.14},{"mes":"Enero 2026","cal":"B","tienda":"MILAGRO II","si":100016.12,"sd":59281.32,"sc":30850.69,"sl":9884.11,"pd":59.27,"pc":30.85,"pl":9.88,"pct":40.73},{"mes":"Enero 2026","cal":"C","tienda":"MILAGRO II","si":76642.02,"sd":51969.39,"sc":16265.27,"sl":8407.36,"pd":67.81,"pc":21.22,"pl":10.97,"pct":32.19},{"mes":"Enero 2026","cal":"D","tienda":"MILAGRO II","si":50867.86,"sd":39107.29,"sc":11376.69,"sl":383.88,"pd":76.88,"pc":22.37,"pl":0.75,"pct":23.12},{"mes":"Enero 2026","cal":"E","tienda":"MILAGRO II","si":24530.01,"sd":20730.36,"sc":1275.54,"sl":2524.11,"pd":84.51,"pc":5.2,"pl":10.29,"pct":15.49},{"mes":"Enero 2026","cal":"E1","tienda":"MILAGRO II","si":24546.89,"sd":20541.93,"sc":1295.05,"sl":2709.91,"pd":83.68,"pc":5.28,"pl":11.04,"pct":16.32},{"mes":"Enero 2026","cal":"E2","tienda":"MILAGRO II","si":9370.82,"sd":9.52,"sc":9361.3,"sl":0,"pd":0.1,"pc":99.9,"pl":0.0,"pct":99.9},{"mes":"Enero 2026","cal":"E3","tienda":"MILAGRO II","si":2282.22,"sd":0,"sc":2282.22,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Enero 2026","cal":"A","tienda":"MILAGRO III","si":58419.71,"sd":16625.25,"sc":25088.37,"sl":16706.09,"pd":28.46,"pc":42.95,"pl":28.6,"pct":71.55},{"mes":"Enero 2026","cal":"AA","tienda":"MILAGRO III","si":647631.59,"sd":45727.23,"sc":600252.65,"sl":1651.71,"pd":7.06,"pc":92.68,"pl":0.26,"pct":92.94},{"mes":"Enero 2026","cal":"B","tienda":"MILAGRO III","si":42501.16,"sd":29730.54,"sc":7831.21,"sl":4939.41,"pd":69.95,"pc":18.43,"pl":11.62,"pct":30.05},{"mes":"Enero 2026","cal":"C","tienda":"MILAGRO III","si":19847.28,"sd":15464.33,"sc":2294.21,"sl":2088.74,"pd":77.92,"pc":11.56,"pl":10.52,"pct":22.08},{"mes":"Enero 2026","cal":"D","tienda":"MILAGRO III","si":4620.83,"sd":3762.66,"sc":0,"sl":858.17,"pd":81.43,"pc":0.0,"pl":18.57,"pct":18.57},{"mes":"Enero 2026","cal":"E","tienda":"MILAGRO III","si":4413.64,"sd":4413.64,"sc":0,"sl":0,"pd":100.0,"pc":0.0,"pl":0.0,"pct":0.0},{"mes":"Enero 2026","cal":"E1","tienda":"MILAGRO III","si":9406.01,"sd":9406.01,"sc":0,"sl":0,"pd":100.0,"pc":0.0,"pl":0.0,"pct":0.0},{"mes":"Enero 2026","cal":"E2","tienda":"MILAGRO III","si":6376.45,"sd":0,"sc":5373.98,"sl":1002.47,"pd":0.0,"pc":84.28,"pl":15.72,"pct":100.0},{"mes":"Enero 2026","cal":"E3","tienda":"MILAGRO III","si":0,"sd":0,"sc":0,"sl":0,"pd":0,"pc":0,"pl":0,"pct":0},{"mes":"Enero 2026","cal":"A","tienda":"VINCES","si":155011.13,"sd":48621.96,"sc":66362.61,"sl":40026.56,"pd":31.37,"pc":42.81,"pl":25.82,"pct":68.63},{"mes":"Enero 2026","cal":"AA","tienda":"VINCES","si":2307469.51,"sd":79155.12,"sc":2226894.22,"sl":1420.17,"pd":3.43,"pc":96.51,"pl":0.06,"pct":96.57},{"mes":"Enero 2026","cal":"B","tienda":"VINCES","si":81409.85,"sd":45545.19,"sc":10285.82,"sl":25578.84,"pd":55.95,"pc":12.63,"pl":31.42,"pct":44.05},{"mes":"Enero 2026","cal":"C","tienda":"VINCES","si":40200.96,"sd":25064.95,"sc":9723.63,"sl":5412.38,"pd":62.35,"pc":24.19,"pl":13.46,"pct":37.65},{"mes":"Enero 2026","cal":"D","tienda":"VINCES","si":38705.87,"sd":29533.14,"sc":592.82,"sl":8579.91,"pd":76.3,"pc":1.53,"pl":22.17,"pct":23.7},{"mes":"Enero 2026","cal":"E","tienda":"VINCES","si":29681.49,"sd":20020.7,"sc":3878.07,"sl":5782.72,"pd":67.45,"pc":13.07,"pl":19.48,"pct":32.55},{"mes":"Enero 2026","cal":"E1","tienda":"VINCES","si":14127.06,"sd":8690.99,"sc":2365.56,"sl":3070.51,"pd":61.52,"pc":16.74,"pl":21.73,"pct":38.47},{"mes":"Enero 2026","cal":"E2","tienda":"VINCES","si":13506.77,"sd":0.17,"sc":13172.55,"sl":334.05,"pd":0.0,"pc":97.53,"pl":2.47,"pct":100.0},{"mes":"Enero 2026","cal":"E3","tienda":"VINCES","si":178.57,"sd":0,"sc":178.57,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Febrero 2026","cal":"A","tienda":"BABAHOYO","si":207717.43,"sd":65751.01,"sc":70922.74,"sl":71043.68,"pd":31.65,"pc":34.14,"pl":34.2,"pct":68.34},{"mes":"Febrero 2026","cal":"AA","tienda":"BABAHOYO","si":2904166.77,"sd":124759.31,"sc":2772594.23,"sl":6813.23,"pd":4.3,"pc":95.47,"pl":0.23,"pct":95.7},{"mes":"Febrero 2026","cal":"B","tienda":"BABAHOYO","si":117072.87,"sd":59694.8,"sc":28012.3,"sl":29365.77,"pd":50.99,"pc":23.93,"pl":25.08,"pct":49.01},{"mes":"Febrero 2026","cal":"C","tienda":"BABAHOYO","si":80998.56,"sd":52015.58,"sc":13251.29,"sl":15731.69,"pd":64.22,"pc":16.36,"pl":19.42,"pct":35.78},{"mes":"Febrero 2026","cal":"D","tienda":"BABAHOYO","si":57939.59,"sd":39955.9,"sc":5496.68,"sl":12487.01,"pd":68.96,"pc":9.49,"pl":21.55,"pct":31.04},{"mes":"Febrero 2026","cal":"E","tienda":"BABAHOYO","si":56133.4,"sd":40477.3,"sc":9850.45,"sl":5805.65,"pd":72.11,"pc":17.55,"pl":10.34,"pct":27.89},{"mes":"Febrero 2026","cal":"E1","tienda":"BABAHOYO","si":32819.75,"sd":28183.83,"sc":4363.77,"sl":272.15,"pd":85.87,"pc":13.3,"pl":0.83,"pct":14.13},{"mes":"Febrero 2026","cal":"E2","tienda":"BABAHOYO","si":25020.07,"sd":0,"sc":24807.88,"sl":212.19,"pd":0.0,"pc":99.15,"pl":0.85,"pct":100.0},{"mes":"Febrero 2026","cal":"E3","tienda":"BABAHOYO","si":35294.64,"sd":0,"sc":35294.64,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Febrero 2026","cal":"A","tienda":"EL TRIUNFO","si":234820.95,"sd":74926.5,"sc":88956.78,"sl":70937.67,"pd":31.91,"pc":37.88,"pl":30.21,"pct":68.09},{"mes":"Febrero 2026","cal":"AA","tienda":"EL TRIUNFO","si":1723048.95,"sd":107217.19,"sc":1612194.78,"sl":3636.98,"pd":6.22,"pc":93.57,"pl":0.21,"pct":93.78},{"mes":"Febrero 2026","cal":"B","tienda":"EL TRIUNFO","si":100438.13,"sd":44874.14,"sc":19484.42,"sl":36079.57,"pd":44.68,"pc":19.4,"pl":35.92,"pct":55.32},{"mes":"Febrero 2026","cal":"C","tienda":"EL TRIUNFO","si":59276.56,"sd":22888.49,"sc":23249.36,"sl":13138.71,"pd":38.61,"pc":39.22,"pl":22.17,"pct":61.39},{"mes":"Febrero 2026","cal":"D","tienda":"EL TRIUNFO","si":34623.02,"sd":27209.24,"sc":5421.1,"sl":1992.68,"pd":78.59,"pc":15.66,"pl":5.76,"pct":21.42},{"mes":"Febrero 2026","cal":"E","tienda":"EL TRIUNFO","si":18752.15,"sd":13593.42,"sc":2768.68,"sl":2390.05,"pd":72.49,"pc":14.76,"pl":12.75,"pct":27.51},{"mes":"Febrero 2026","cal":"E1","tienda":"EL TRIUNFO","si":17219.06,"sd":9237.63,"sc":7172.25,"sl":809.18,"pd":53.65,"pc":41.65,"pl":4.7,"pct":46.35},{"mes":"Febrero 2026","cal":"E2","tienda":"EL TRIUNFO","si":9939.25,"sd":0.25,"sc":9939.0,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Febrero 2026","cal":"E3","tienda":"EL TRIUNFO","si":1382.35,"sd":0,"sc":1382.35,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Febrero 2026","cal":"A","tienda":"MILAGRO II","si":200833.01,"sd":91050.37,"sc":43665.67,"sl":66116.97,"pd":45.34,"pc":21.74,"pl":32.92,"pct":54.66},{"mes":"Febrero 2026","cal":"AA","tienda":"MILAGRO II","si":1803267.66,"sd":169480.37,"sc":1631068.76,"sl":2718.53,"pd":9.4,"pc":90.45,"pl":0.15,"pct":90.6},{"mes":"Febrero 2026","cal":"B","tienda":"MILAGRO II","si":107360.47,"sd":69749.69,"sc":25917.82,"sl":11692.96,"pd":64.97,"pc":24.14,"pl":10.89,"pct":35.03},{"mes":"Febrero 2026","cal":"C","tienda":"MILAGRO II","si":74972.42,"sd":48529.66,"sc":17052.12,"sl":9390.64,"pd":64.73,"pc":22.74,"pl":12.53,"pct":35.27},{"mes":"Febrero 2026","cal":"D","tienda":"MILAGRO II","si":53416.18,"sd":37698.49,"sc":1926.4,"sl":13791.29,"pd":70.58,"pc":3.61,"pl":25.82,"pct":29.43},{"mes":"Febrero 2026","cal":"E","tienda":"MILAGRO II","si":39845.92,"sd":28229.32,"sc":8366.21,"sl":3250.39,"pd":70.85,"pc":21.0,"pl":8.16,"pct":29.16},{"mes":"Febrero 2026","cal":"E1","tienda":"MILAGRO II","si":23675.27,"sd":18597.59,"sc":5077.68,"sl":0,"pd":78.55,"pc":21.45,"pl":0.0,"pct":21.45},{"mes":"Febrero 2026","cal":"E2","tienda":"MILAGRO II","si":20529.52,"sd":0.48,"sc":20529.04,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Febrero 2026","cal":"E3","tienda":"MILAGRO II","si":2229.22,"sd":0,"sc":2229.22,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Febrero 2026","cal":"A","tienda":"MILAGRO III","si":73988.75,"sd":42667.3,"sc":15020.95,"sl":16300.5,"pd":57.67,"pc":20.3,"pl":22.03,"pct":42.33},{"mes":"Febrero 2026","cal":"AA","tienda":"MILAGRO III","si":647092.82,"sd":53861.13,"sc":592394.77,"sl":836.92,"pd":8.32,"pc":91.55,"pl":0.13,"pct":91.68},{"mes":"Febrero 2026","cal":"B","tienda":"MILAGRO III","si":25661.93,"sd":16350.23,"sc":7932.87,"sl":1378.83,"pd":63.71,"pc":30.91,"pl":5.37,"pct":36.28},{"mes":"Febrero 2026","cal":"C","tienda":"MILAGRO III","si":32256.74,"sd":27893.34,"sc":4363.4,"sl":0,"pd":86.47,"pc":13.53,"pl":0.0,"pct":13.53},{"mes":"Febrero 2026","cal":"D","tienda":"MILAGRO III","si":11513.3,"sd":7932.97,"sc":2495.06,"sl":1085.27,"pd":68.9,"pc":21.67,"pl":9.43,"pct":31.1},{"mes":"Febrero 2026","cal":"E","tienda":"MILAGRO III","si":7496.88,"sd":3740.12,"sc":3756.76,"sl":0,"pd":49.89,"pc":50.11,"pl":0.0,"pct":50.11},{"mes":"Febrero 2026","cal":"E1","tienda":"MILAGRO III","si":4391.06,"sd":2544.98,"sc":1846.08,"sl":0,"pd":57.96,"pc":42.04,"pl":0.0,"pct":42.04},{"mes":"Febrero 2026","cal":"E2","tienda":"MILAGRO III","si":9398.75,"sd":0,"sc":8304.39,"sl":1094.36,"pd":0.0,"pc":88.36,"pl":11.64,"pct":100.0},{"mes":"Febrero 2026","cal":"E3","tienda":"MILAGRO III","si":0,"sd":0,"sc":0,"sl":0,"pd":0,"pc":0,"pl":0,"pct":0},{"mes":"Febrero 2026","cal":"A","tienda":"VINCES","si":168171.98,"sd":60987.17,"sc":56603.95,"sl":50580.86,"pd":36.26,"pc":33.66,"pl":30.08,"pct":63.74},{"mes":"Febrero 2026","cal":"AA","tienda":"VINCES","si":2402088.76,"sd":100815.35,"sc":2295913.48,"sl":5359.93,"pd":4.2,"pc":95.58,"pl":0.22,"pct":95.8},{"mes":"Febrero 2026","cal":"B","tienda":"VINCES","si":62027.42,"sd":25710.55,"sc":14539.65,"sl":21777.22,"pd":41.45,"pc":23.44,"pl":35.11,"pct":58.55},{"mes":"Febrero 2026","cal":"C","tienda":"VINCES","si":58950.72,"sd":32494.05,"sc":12513.65,"sl":13943.02,"pd":55.12,"pc":21.23,"pl":23.65,"pct":44.88},{"mes":"Febrero 2026","cal":"D","tienda":"VINCES","si":23564.26,"sd":14388.69,"sc":4020.06,"sl":5155.51,"pd":61.06,"pc":17.06,"pl":21.88,"pct":38.94},{"mes":"Febrero 2026","cal":"E","tienda":"VINCES","si":28750.58,"sd":17611.21,"sc":9537.84,"sl":1601.53,"pd":61.26,"pc":33.17,"pl":5.57,"pct":38.74},{"mes":"Febrero 2026","cal":"E1","tienda":"VINCES","si":28168.78,"sd":16311.17,"sc":4935.17,"sl":6922.44,"pd":57.91,"pc":17.52,"pl":24.57,"pct":42.09},{"mes":"Febrero 2026","cal":"E2","tienda":"VINCES","si":19194.04,"sd":0,"sc":16776.54,"sl":2417.5,"pd":0.0,"pc":87.4,"pl":12.6,"pct":100.0},{"mes":"Febrero 2026","cal":"E3","tienda":"VINCES","si":177.7,"sd":0,"sc":177.58,"sl":0.12,"pd":0.0,"pc":99.93,"pl":0.07,"pct":100.0},{"mes":"Marzo 2026","cal":"A","tienda":"BABAHOYO","si":214110.53,"sd":73922.9,"sc":74536.95,"sl":65650.68,"pd":34.53,"pc":34.81,"pl":30.66,"pct":65.47},{"mes":"Marzo 2026","cal":"AA","tienda":"BABAHOYO","si":3048846.32,"sd":27102.64,"sc":3008063.11,"sl":13680.57,"pd":0.89,"pc":98.66,"pl":0.45,"pct":99.11},{"mes":"Marzo 2026","cal":"B","tienda":"BABAHOYO","si":101990.38,"sd":53237.37,"sc":26929.06,"sl":21823.95,"pd":52.2,"pc":26.4,"pl":21.4,"pct":47.8},{"mes":"Marzo 2026","cal":"C","tienda":"BABAHOYO","si":78182.16,"sd":47079.51,"sc":18569.27,"sl":12533.38,"pd":60.22,"pc":23.75,"pl":16.03,"pct":39.78},{"mes":"Marzo 2026","cal":"D","tienda":"BABAHOYO","si":52273.7,"sd":36780.88,"sc":9389.9,"sl":6102.92,"pd":70.36,"pc":17.96,"pl":11.67,"pct":29.63},{"mes":"Marzo 2026","cal":"E","tienda":"BABAHOYO","si":32066.58,"sd":28222.06,"sc":1534.79,"sl":2309.73,"pd":88.01,"pc":4.79,"pl":7.2,"pct":11.99},{"mes":"Marzo 2026","cal":"E1","tienda":"BABAHOYO","si":37830.23,"sd":28132.98,"sc":6247.1,"sl":3450.15,"pd":74.37,"pc":16.51,"pl":9.12,"pct":25.63},{"mes":"Marzo 2026","cal":"E2","tienda":"BABAHOYO","si":16976.27,"sd":0,"sc":15785.36,"sl":1190.91,"pd":0.0,"pc":92.98,"pl":7.02,"pct":100.0},{"mes":"Marzo 2026","cal":"E3","tienda":"BABAHOYO","si":35293.7,"sd":0,"sc":35293.7,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Marzo 2026","cal":"A","tienda":"EL TRIUNFO","si":225961.69,"sd":105628.18,"sc":74068.32,"sl":46265.19,"pd":46.75,"pc":32.78,"pl":20.47,"pct":53.25},{"mes":"Marzo 2026","cal":"AA","tienda":"EL TRIUNFO","si":1798352.92,"sd":111253.11,"sc":1680302.69,"sl":6797.12,"pd":6.19,"pc":93.44,"pl":0.38,"pct":93.82},{"mes":"Marzo 2026","cal":"B","tienda":"EL TRIUNFO","si":103389.15,"sd":48512.97,"sc":11229.04,"sl":43647.14,"pd":46.92,"pc":10.86,"pl":42.22,"pct":53.08},{"mes":"Marzo 2026","cal":"C","tienda":"EL TRIUNFO","si":70877.26,"sd":46048.63,"sc":9968.5,"sl":14860.13,"pd":64.97,"pc":14.06,"pl":20.97,"pct":35.03},{"mes":"Marzo 2026","cal":"D","tienda":"EL TRIUNFO","si":25607.71,"sd":14581.7,"sc":5770.58,"sl":5255.43,"pd":56.94,"pc":22.53,"pl":20.52,"pct":43.05},{"mes":"Marzo 2026","cal":"E","tienda":"EL TRIUNFO","si":22268.68,"sd":16014.0,"sc":6060.05,"sl":194.63,"pd":71.91,"pc":27.21,"pl":0.87,"pct":28.08},{"mes":"Marzo 2026","cal":"E1","tienda":"EL TRIUNFO","si":18470.78,"sd":12068.65,"sc":3195.75,"sl":3206.38,"pd":65.34,"pc":17.3,"pl":17.36,"pct":34.66},{"mes":"Marzo 2026","cal":"E2","tienda":"EL TRIUNFO","si":9437.07,"sd":0.34,"sc":9436.73,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Marzo 2026","cal":"E3","tienda":"EL TRIUNFO","si":1382.3,"sd":0,"sc":1382.3,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Marzo 2026","cal":"A","tienda":"MILAGRO II","si":232897.68,"sd":97441.42,"sc":68873.59,"sl":66582.67,"pd":41.84,"pc":29.57,"pl":28.59,"pct":58.16},{"mes":"Marzo 2026","cal":"AA","tienda":"MILAGRO II","si":1826552.92,"sd":154862.55,"sc":1664117.61,"sl":7572.76,"pd":8.48,"pc":91.11,"pl":0.41,"pct":91.52},{"mes":"Marzo 2026","cal":"B","tienda":"MILAGRO II","si":121242.25,"sd":50075.5,"sc":39271.85,"sl":31894.9,"pd":41.3,"pc":32.39,"pl":26.31,"pct":58.7},{"mes":"Marzo 2026","cal":"C","tienda":"MILAGRO II","si":95478.02,"sd":74341.39,"sc":14419.92,"sl":6716.71,"pd":77.86,"pc":15.1,"pl":7.03,"pct":22.13},{"mes":"Marzo 2026","cal":"D","tienda":"MILAGRO II","si":49749.1,"sd":42165.0,"sc":2980.11,"sl":4603.99,"pd":84.76,"pc":5.99,"pl":9.25,"pct":15.24},{"mes":"Marzo 2026","cal":"E","tienda":"MILAGRO II","si":43340.03,"sd":38380.79,"sc":3623.53,"sl":1335.71,"pd":88.56,"pc":8.36,"pl":3.08,"pct":11.44},{"mes":"Marzo 2026","cal":"E1","tienda":"MILAGRO II","si":25244.24,"sd":20770.56,"sc":2341.42,"sl":2132.26,"pd":82.28,"pc":9.28,"pl":8.45,"pct":17.73},{"mes":"Marzo 2026","cal":"E2","tienda":"MILAGRO II","si":15166.21,"sd":0.67,"sc":15165.54,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Marzo 2026","cal":"E3","tienda":"MILAGRO II","si":2222.01,"sd":0,"sc":2222.01,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Marzo 2026","cal":"A","tienda":"MILAGRO III","si":68475.86,"sd":27049.08,"sc":26199.74,"sl":15227.04,"pd":39.5,"pc":38.26,"pl":22.24,"pct":60.5},{"mes":"Marzo 2026","cal":"AA","tienda":"MILAGRO III","si":643995.08,"sd":34569.85,"sc":608175.25,"sl":1249.98,"pd":5.37,"pc":94.44,"pl":0.19,"pct":94.63},{"mes":"Marzo 2026","cal":"B","tienda":"MILAGRO III","si":50012.11,"sd":38686.45,"sc":5861.56,"sl":5464.1,"pd":77.35,"pc":11.72,"pl":10.93,"pct":22.65},{"mes":"Marzo 2026","cal":"C","tienda":"MILAGRO III","si":21519.89,"sd":14051.62,"sc":4367.0,"sl":3101.27,"pd":65.3,"pc":20.29,"pl":14.41,"pct":34.7},{"mes":"Marzo 2026","cal":"D","tienda":"MILAGRO III","si":29961.4,"sd":19218.56,"sc":6868.91,"sl":3873.93,"pd":64.14,"pc":22.93,"pl":12.93,"pct":35.86},{"mes":"Marzo 2026","cal":"E","tienda":"MILAGRO III","si":8122.96,"sd":6494.28,"sc":12.65,"sl":1616.03,"pd":79.95,"pc":0.16,"pl":19.89,"pct":20.05},{"mes":"Marzo 2026","cal":"E1","tienda":"MILAGRO III","si":3789.56,"sd":3789.56,"sc":0,"sl":0,"pd":100.0,"pc":0.0,"pl":0.0,"pct":0.0},{"mes":"Marzo 2026","cal":"E2","tienda":"MILAGRO III","si":166.83,"sd":0,"sc":166.83,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Marzo 2026","cal":"E3","tienda":"MILAGRO III","si":0,"sd":0,"sc":0,"sl":0,"pd":0,"pc":0,"pl":0,"pct":0},{"mes":"Marzo 2026","cal":"A","tienda":"VINCES","si":172488.3,"sd":75814.53,"sc":50744.12,"sl":45929.65,"pd":43.95,"pc":29.42,"pl":26.63,"pct":56.05},{"mes":"Marzo 2026","cal":"AA","tienda":"VINCES","si":2523020.99,"sd":100642.93,"sc":2417357.99,"sl":5020.07,"pd":3.99,"pc":95.81,"pl":0.2,"pct":96.01},{"mes":"Marzo 2026","cal":"B","tienda":"VINCES","si":83334.78,"sd":37475.41,"sc":20103.16,"sl":25756.21,"pd":44.97,"pc":24.12,"pl":30.91,"pct":55.03},{"mes":"Marzo 2026","cal":"C","tienda":"VINCES","si":37622.59,"sd":23989.08,"sc":5573.77,"sl":8059.74,"pd":63.76,"pc":14.81,"pl":21.42,"pct":36.23},{"mes":"Marzo 2026","cal":"D","tienda":"VINCES","si":34621.34,"sd":19831.47,"sc":5595.79,"sl":9194.08,"pd":57.28,"pc":16.16,"pl":26.56,"pct":42.72},{"mes":"Marzo 2026","cal":"E","tienda":"VINCES","si":21743.85,"sd":16062.78,"sc":3990.72,"sl":1690.35,"pd":73.87,"pc":18.35,"pl":7.77,"pct":26.12},{"mes":"Marzo 2026","cal":"E1","tienda":"VINCES","si":15767.72,"sd":11941.59,"sc":3209.92,"sl":616.21,"pd":75.73,"pc":20.36,"pl":3.91,"pct":24.27},{"mes":"Marzo 2026","cal":"E2","tienda":"VINCES","si":13717.34,"sd":5.29,"sc":13712.05,"sl":0,"pd":0.04,"pc":99.96,"pl":0.0,"pct":99.96},{"mes":"Marzo 2026","cal":"E3","tienda":"VINCES","si":177.07,"sd":0,"sc":177.07,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Abril 2026","cal":"A","tienda":"BABAHOYO","si":118130.45,"sd":40127.02,"sc":47216.11,"sl":30787.32,"pd":33.97,"pc":39.97,"pl":26.06,"pct":66.03},{"mes":"Abril 2026","cal":"AA","tienda":"BABAHOYO","si":3036783.55,"sd":212023.49,"sc":2812118.6,"sl":12641.46,"pd":6.98,"pc":92.6,"pl":0.42,"pct":93.02},{"mes":"Abril 2026","cal":"B","tienda":"BABAHOYO","si":98014.4,"sd":39515.28,"sc":28208.48,"sl":30290.64,"pd":40.32,"pc":28.78,"pl":30.9,"pct":59.68},{"mes":"Abril 2026","cal":"C","tienda":"BABAHOYO","si":72938.6,"sd":40442.09,"sc":11594.7,"sl":20901.81,"pd":55.45,"pc":15.9,"pl":28.66,"pct":44.56},{"mes":"Abril 2026","cal":"D","tienda":"BABAHOYO","si":54388.99,"sd":27769.29,"sc":9419.44,"sl":17200.26,"pd":51.06,"pc":17.32,"pl":31.62,"pct":48.94},{"mes":"Abril 2026","cal":"E","tienda":"BABAHOYO","si":37737.6,"sd":30748.94,"sc":5294.64,"sl":1694.02,"pd":81.48,"pc":14.03,"pl":4.49,"pct":18.52},{"mes":"Abril 2026","cal":"E1","tienda":"BABAHOYO","si":29145.44,"sd":18589.76,"sc":9799.44,"sl":756.24,"pd":63.78,"pc":33.62,"pl":2.59,"pct":36.21},{"mes":"Abril 2026","cal":"E2","tienda":"BABAHOYO","si":28572.99,"sd":0.41,"sc":27544.96,"sl":1027.62,"pd":0.0,"pc":96.4,"pl":3.6,"pct":100.0},{"mes":"Abril 2026","cal":"E3","tienda":"BABAHOYO","si":35282.13,"sd":0,"sc":35282.13,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Abril 2026","cal":"A","tienda":"EL TRIUNFO","si":200141.48,"sd":67823.32,"sc":61166.32,"sl":71151.84,"pd":33.89,"pc":30.56,"pl":35.55,"pct":66.11},{"mes":"Abril 2026","cal":"AA","tienda":"EL TRIUNFO","si":1804685.44,"sd":93963.86,"sc":1704465.93,"sl":6255.65,"pd":5.21,"pc":94.45,"pl":0.35,"pct":94.8},{"mes":"Abril 2026","cal":"B","tienda":"EL TRIUNFO","si":118019.56,"sd":54295.77,"sc":38975.44,"sl":24748.35,"pd":46.01,"pc":33.02,"pl":20.97,"pct":53.99},{"mes":"Abril 2026","cal":"C","tienda":"EL TRIUNFO","si":65504.3,"sd":31130.77,"sc":11339.42,"sl":23034.11,"pd":47.52,"pc":17.31,"pl":35.16,"pct":52.47},{"mes":"Abril 2026","cal":"D","tienda":"EL TRIUNFO","si":48547.09,"sd":35014.53,"sc":5188.82,"sl":8343.74,"pd":72.12,"pc":10.69,"pl":17.19,"pct":27.88},{"mes":"Abril 2026","cal":"E","tienda":"EL TRIUNFO","si":21560.9,"sd":13759.56,"sc":7801.34,"sl":0,"pd":63.82,"pc":36.18,"pl":0.0,"pct":36.18},{"mes":"Abril 2026","cal":"E1","tienda":"EL TRIUNFO","si":15579.6,"sd":9491.24,"sc":2449.15,"sl":3639.21,"pd":60.92,"pc":15.72,"pl":23.36,"pct":39.08},{"mes":"Abril 2026","cal":"E2","tienda":"EL TRIUNFO","si":12013.86,"sd":0.48,"sc":12013.38,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Abril 2026","cal":"E3","tienda":"EL TRIUNFO","si":1334.48,"sd":0,"sc":1334.48,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Abril 2026","cal":"A","tienda":"MILAGRO II","si":223287.55,"sd":93260.38,"sc":69164.16,"sl":60863.01,"pd":41.77,"pc":30.98,"pl":27.26,"pct":58.24},{"mes":"Abril 2026","cal":"AA","tienda":"MILAGRO II","si":1789541.97,"sd":116479.17,"sc":1667600.46,"sl":5462.34,"pd":6.51,"pc":93.19,"pl":0.31,"pct":93.5},{"mes":"Abril 2026","cal":"B","tienda":"MILAGRO II","si":142329.88,"sd":78800.37,"sc":26111.37,"sl":37418.14,"pd":55.36,"pc":18.35,"pl":26.29,"pct":44.64},{"mes":"Abril 2026","cal":"C","tienda":"MILAGRO II","si":65436.84,"sd":41044.89,"sc":10728.54,"sl":13663.41,"pd":62.72,"pc":16.4,"pl":20.88,"pct":37.28},{"mes":"Abril 2026","cal":"D","tienda":"MILAGRO II","si":69560.4,"sd":59332.15,"sc":3440.43,"sl":6787.82,"pd":85.3,"pc":4.95,"pl":9.76,"pct":14.71},{"mes":"Abril 2026","cal":"E","tienda":"MILAGRO II","si":44858.68,"sd":41820.87,"sc":1.12,"sl":3036.69,"pd":93.23,"pc":0.0,"pl":6.77,"pct":6.77},{"mes":"Abril 2026","cal":"E1","tienda":"MILAGRO II","si":32534.42,"sd":26135.96,"sc":3603.17,"sl":2795.29,"pd":80.33,"pc":11.07,"pl":8.59,"pct":19.66},{"mes":"Abril 2026","cal":"E2","tienda":"MILAGRO II","si":24292.84,"sd":0,"sc":23361.57,"sl":931.27,"pd":0.0,"pc":96.17,"pl":3.83,"pct":100.0},{"mes":"Abril 2026","cal":"E3","tienda":"MILAGRO II","si":2222.55,"sd":0,"sc":2222.55,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Abril 2026","cal":"A","tienda":"MILAGRO III","si":66321.67,"sd":32582.7,"sc":21337.98,"sl":12400.99,"pd":49.13,"pc":32.17,"pl":18.7,"pct":50.87},{"mes":"Abril 2026","cal":"AA","tienda":"MILAGRO III","si":656951.47,"sd":30040.65,"sc":625593.59,"sl":1317.23,"pd":4.57,"pc":95.23,"pl":0.2,"pct":95.43},{"mes":"Abril 2026","cal":"B","tienda":"MILAGRO III","si":34261.61,"sd":25339.11,"sc":6913.26,"sl":2009.24,"pd":73.96,"pc":20.18,"pl":5.86,"pct":26.04},{"mes":"Abril 2026","cal":"C","tienda":"MILAGRO III","si":47152.11,"sd":36027.32,"sc":8631.94,"sl":2492.85,"pd":76.41,"pc":18.31,"pl":5.29,"pct":23.6},{"mes":"Abril 2026","cal":"D","tienda":"MILAGRO III","si":21885.53,"sd":15749.03,"sc":1960.08,"sl":4176.42,"pd":71.96,"pc":8.96,"pl":19.08,"pct":28.04},{"mes":"Abril 2026","cal":"E","tienda":"MILAGRO III","si":13015.19,"sd":13015.19,"sc":0,"sl":0,"pd":100.0,"pc":0.0,"pl":0.0,"pct":0.0},{"mes":"Abril 2026","cal":"E1","tienda":"MILAGRO III","si":5134.39,"sd":4138.47,"sc":0,"sl":995.92,"pd":80.6,"pc":0.0,"pl":19.4,"pct":19.4},{"mes":"Abril 2026","cal":"E2","tienda":"MILAGRO III","si":5140.31,"sd":0,"sc":5140.31,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Abril 2026","cal":"E3","tienda":"MILAGRO III","si":0,"sd":0,"sc":0,"sl":0,"pd":0,"pc":0,"pl":0,"pct":0},{"mes":"Abril 2026","cal":"A","tienda":"VINCES","si":160702.28,"sd":61287.26,"sc":52185.01,"sl":47230.01,"pd":38.14,"pc":32.47,"pl":29.39,"pct":61.86},{"mes":"Abril 2026","cal":"AA","tienda":"VINCES","si":2562539.91,"sd":119147.64,"sc":2438617.84,"sl":4774.43,"pd":4.65,"pc":95.16,"pl":0.19,"pct":95.35},{"mes":"Abril 2026","cal":"B","tienda":"VINCES","si":99447.15,"sd":59478.51,"sc":18858.21,"sl":21110.43,"pd":59.81,"pc":18.96,"pl":21.23,"pct":40.19},{"mes":"Abril 2026","cal":"C","tienda":"VINCES","si":50931.7,"sd":30563.5,"sc":7198.18,"sl":13170.02,"pd":60.01,"pc":14.13,"pl":25.86,"pct":39.99},{"mes":"Abril 2026","cal":"D","tienda":"VINCES","si":28892.93,"sd":21321.18,"sc":5017.47,"sl":2554.28,"pd":73.79,"pc":17.37,"pl":8.84,"pct":26.21},{"mes":"Abril 2026","cal":"E","tienda":"VINCES","si":23440.06,"sd":18644.91,"sc":2900.53,"sl":1894.62,"pd":79.54,"pc":12.37,"pl":8.08,"pct":20.45},{"mes":"Abril 2026","cal":"E1","tienda":"VINCES","si":15940.5,"sd":15219.71,"sc":5.39,"sl":715.4,"pd":95.48,"pc":0.03,"pl":4.49,"pct":4.52},{"mes":"Abril 2026","cal":"E2","tienda":"VINCES","si":16097.64,"sd":841.1,"sc":14507.06,"sl":749.48,"pd":5.22,"pc":90.12,"pl":4.66,"pct":94.78},{"mes":"Abril 2026","cal":"E3","tienda":"VINCES","si":181.13,"sd":0,"sc":181.13,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Mayo 2026","cal":"A","tienda":"BABAHOYO","si":265070.6,"sd":127809.54,"sc":59486.11,"sl":77774.95,"pd":48.22,"pc":22.44,"pl":29.34,"pct":51.78},{"mes":"Mayo 2026","cal":"AA","tienda":"BABAHOYO","si":2924958.96,"sd":143332.92,"sc":2776429.52,"sl":5196.52,"pd":4.9,"pc":94.92,"pl":0.18,"pct":95.1},{"mes":"Mayo 2026","cal":"B","tienda":"BABAHOYO","si":70313.2,"sd":36012.39,"sc":16371.95,"sl":17928.86,"pd":51.22,"pc":23.28,"pl":25.5,"pct":48.78},{"mes":"Mayo 2026","cal":"C","tienda":"BABAHOYO","si":62788.13,"sd":39808.84,"sc":14395.07,"sl":8584.22,"pd":63.4,"pc":22.93,"pl":13.67,"pct":36.6},{"mes":"Mayo 2026","cal":"D","tienda":"BABAHOYO","si":52141.08,"sd":29392.83,"sc":6391.5,"sl":16356.75,"pd":56.37,"pc":12.26,"pl":31.37,"pct":43.63},{"mes":"Mayo 2026","cal":"E","tienda":"BABAHOYO","si":32560.66,"sd":24618.2,"sc":6528.57,"sl":1413.89,"pd":75.61,"pc":20.05,"pl":4.34,"pct":24.39},{"mes":"Mayo 2026","cal":"E1","tienda":"BABAHOYO","si":36484.21,"sd":30328.13,"sc":2880.87,"sl":3275.21,"pd":83.13,"pc":7.9,"pl":8.98,"pct":16.88},{"mes":"Mayo 2026","cal":"E2","tienda":"BABAHOYO","si":23358.31,"sd":4.52,"sc":22371.8,"sl":981.99,"pd":0.02,"pc":95.78,"pl":4.2,"pct":99.98},{"mes":"Mayo 2026","cal":"E3","tienda":"BABAHOYO","si":35282.3,"sd":0,"sc":35282.3,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Mayo 2026","cal":"A","tienda":"EL TRIUNFO","si":194203.91,"sd":69931.36,"sc":76968.12,"sl":47304.43,"pd":36.01,"pc":39.63,"pl":24.36,"pct":63.99},{"mes":"Mayo 2026","cal":"AA","tienda":"EL TRIUNFO","si":1863748.23,"sd":123622.7,"sc":1734157.64,"sl":5967.89,"pd":6.63,"pc":93.05,"pl":0.32,"pct":93.37},{"mes":"Mayo 2026","cal":"B","tienda":"EL TRIUNFO","si":111338.8,"sd":51086.48,"sc":20771.83,"sl":39480.49,"pd":45.88,"pc":18.66,"pl":35.46,"pct":54.12},{"mes":"Mayo 2026","cal":"C","tienda":"EL TRIUNFO","si":70679.86,"sd":45073.28,"sc":9778.69,"sl":15827.89,"pd":63.77,"pc":13.84,"pl":22.39,"pct":36.23},{"mes":"Mayo 2026","cal":"D","tienda":"EL TRIUNFO","si":35539.22,"sd":26827.47,"sc":994.44,"sl":7717.31,"pd":75.49,"pc":2.8,"pl":21.71,"pct":24.51},{"mes":"Mayo 2026","cal":"E","tienda":"EL TRIUNFO","si":39435.95,"sd":38831.79,"sc":604.16,"sl":0,"pd":98.47,"pc":1.53,"pl":0.0,"pct":1.53},{"mes":"Mayo 2026","cal":"E1","tienda":"EL TRIUNFO","si":13820.59,"sd":10804.78,"sc":3015.81,"sl":0,"pd":78.18,"pc":21.82,"pl":0.0,"pct":21.82},{"mes":"Mayo 2026","cal":"E2","tienda":"EL TRIUNFO","si":9333.12,"sd":0,"sc":9333.12,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Mayo 2026","cal":"E3","tienda":"EL TRIUNFO","si":1334.94,"sd":0,"sc":1334.94,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Mayo 2026","cal":"A","tienda":"MILAGRO II","si":223830.38,"sd":106423.04,"sc":84251.33,"sl":33156.01,"pd":47.55,"pc":37.64,"pl":14.81,"pct":52.45},{"mes":"Mayo 2026","cal":"AA","tienda":"MILAGRO II","si":1783562.5,"sd":152425.44,"sc":1624276.24,"sl":6860.82,"pd":8.55,"pc":91.07,"pl":0.38,"pct":91.45},{"mes":"Mayo 2026","cal":"B","tienda":"MILAGRO II","si":127456.39,"sd":61927.73,"sc":28386.04,"sl":37142.62,"pd":48.59,"pc":22.27,"pl":29.14,"pct":51.41},{"mes":"Mayo 2026","cal":"C","tienda":"MILAGRO II","si":80494.12,"sd":56479.0,"sc":11111.44,"sl":12903.68,"pd":70.17,"pc":13.8,"pl":16.03,"pct":29.83},{"mes":"Mayo 2026","cal":"D","tienda":"MILAGRO II","si":46640.41,"sd":33717.88,"sc":5974.02,"sl":6948.51,"pd":72.29,"pc":12.81,"pl":14.9,"pct":27.71},{"mes":"Mayo 2026","cal":"E","tienda":"MILAGRO II","si":61923.75,"sd":58817.23,"sc":3106.52,"sl":0,"pd":94.98,"pc":5.02,"pl":0.0,"pct":5.02},{"mes":"Mayo 2026","cal":"E1","tienda":"MILAGRO II","si":28433.75,"sd":25775.26,"sc":2658.49,"sl":0,"pd":90.65,"pc":9.35,"pl":0.0,"pct":9.35},{"mes":"Mayo 2026","cal":"E2","tienda":"MILAGRO II","si":28665.32,"sd":0.05,"sc":27913.83,"sl":751.44,"pd":0.0,"pc":97.38,"pl":2.62,"pct":100.0},{"mes":"Mayo 2026","cal":"E3","tienda":"MILAGRO II","si":2221.55,"sd":0,"sc":2221.55,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Mayo 2026","cal":"A","tienda":"MILAGRO III","si":63237.27,"sd":38565.91,"sc":8419.75,"sl":16251.61,"pd":60.99,"pc":13.31,"pl":25.7,"pct":39.01},{"mes":"Mayo 2026","cal":"AA","tienda":"MILAGRO III","si":708026.73,"sd":47513.14,"sc":658597.36,"sl":1916.23,"pd":6.71,"pc":93.02,"pl":0.27,"pct":93.29},{"mes":"Mayo 2026","cal":"B","tienda":"MILAGRO III","si":41515.7,"sd":27578.98,"sc":6797.63,"sl":7139.09,"pd":66.43,"pc":16.37,"pl":17.2,"pct":33.57},{"mes":"Mayo 2026","cal":"C","tienda":"MILAGRO III","si":39142.2,"sd":26557.21,"sc":8247.68,"sl":4337.31,"pd":67.85,"pc":21.07,"pl":11.08,"pct":32.15},{"mes":"Mayo 2026","cal":"D","tienda":"MILAGRO III","si":35240.11,"sd":35240.11,"sc":0,"sl":0,"pd":100.0,"pc":0.0,"pl":0.0,"pct":0.0},{"mes":"Mayo 2026","cal":"E","tienda":"MILAGRO III","si":13592.48,"sd":11497.39,"sc":2095.09,"sl":0,"pd":84.59,"pc":15.41,"pl":0.0,"pct":15.41},{"mes":"Mayo 2026","cal":"E1","tienda":"MILAGRO III","si":11331.56,"sd":11331.56,"sc":0,"sl":0,"pd":100.0,"pc":0.0,"pl":0.0,"pct":0.0},{"mes":"Mayo 2026","cal":"E2","tienda":"MILAGRO III","si":5482.86,"sd":0,"sc":5482.86,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0},{"mes":"Mayo 2026","cal":"E3","tienda":"MILAGRO III","si":0,"sd":0,"sc":0,"sl":0,"pd":0,"pc":0,"pl":0,"pct":0},{"mes":"Mayo 2026","cal":"A","tienda":"VINCES","si":199083.69,"sd":88061.91,"sc":58345.54,"sl":52676.24,"pd":44.23,"pc":29.31,"pl":26.46,"pct":55.77},{"mes":"Mayo 2026","cal":"AA","tienda":"VINCES","si":2518020.72,"sd":115902.93,"sc":2399397.5,"sl":2720.29,"pd":4.6,"pc":95.29,"pl":0.11,"pct":95.4},{"mes":"Mayo 2026","cal":"B","tienda":"VINCES","si":81761.95,"sd":39529.2,"sc":22247.51,"sl":19985.24,"pd":48.35,"pc":27.21,"pl":24.44,"pct":51.65},{"mes":"Mayo 2026","cal":"C","tienda":"VINCES","si":63392.12,"sd":37899.05,"sc":6590.55,"sl":18902.52,"pd":59.79,"pc":10.4,"pl":29.82,"pct":40.22},{"mes":"Mayo 2026","cal":"D","tienda":"VINCES","si":37642.66,"sd":25279.39,"sc":3884.33,"sl":8478.94,"pd":67.16,"pc":10.32,"pl":22.52,"pct":32.84},{"mes":"Mayo 2026","cal":"E","tienda":"VINCES","si":22892.88,"sd":20842.77,"sc":998.64,"sl":1051.47,"pd":91.04,"pc":4.36,"pl":4.59,"pct":8.95},{"mes":"Mayo 2026","cal":"E1","tienda":"VINCES","si":18899.22,"sd":15883.84,"sc":3015.38,"sl":0,"pd":84.04,"pc":15.96,"pl":0.0,"pct":15.96},{"mes":"Mayo 2026","cal":"E2","tienda":"VINCES","si":17403.43,"sd":0.88,"sc":17402.55,"sl":0,"pd":0.01,"pc":99.99,"pl":0.0,"pct":99.99},{"mes":"Mayo 2026","cal":"E3","tienda":"VINCES","si":182.8,"sd":0,"sc":182.8,"sl":0,"pd":0.0,"pc":100.0,"pl":0.0,"pct":100.0}];
+
+const MES_ORDER = ['Octubre 2025','Noviembre 2025','Diciembre 2025','Enero 2026','Febrero 2026','Marzo 2026','Abril 2026','Mayo 2026'];
+
+let chart = null;
+
+function fmt(v){ return v===null||v===undefined?'—':v.toFixed(2)+'%'; }
+
+function getFiltered(){
+  const t=document.getElementById('fTienda').value;
+  const c=document.getElementById('fCal').value;
+  const m=document.getElementById('fMes').value;
+  const a=document.getElementById('fAnio').value;
+  return RAW.filter(r=>{
+    if(t!=='ALL'&&r.tienda!==t) return false;
+    if(c!=='ALL'&&r.cal!==c) return false;
+    if(m!=='ALL'&&r.mes!==m) return false;
+    if(a!=='ALL'&&!r.mes.includes(a)) return false;
+    return true;
+  });
+}
+
+function calcMonthlySeries(data){
+  // Agrupa por mes → valor mensual = media aritmética de registros del mes
+  const byMes = {};
+  MES_ORDER.forEach(m => byMes[m] = {pc:[],pl:[],pd:[]});
+  data.forEach(r => {
+    if(byMes[r.mes]){ byMes[r.mes].pc.push(r.pc); byMes[r.mes].pl.push(r.pl); byMes[r.mes].pd.push(r.pd); }
+  });
+  const SHORT = {'Octubre 2025':'Oct','Noviembre 2025':'Nov','Diciembre 2025':'Dic',
+                 'Enero 2026':'Ene','Febrero 2026':'Feb','Marzo 2026':'Mar','Abril 2026':'Abr','Mayo 2026':'May'};
+  const labels=[],mesNames=[],pc=[],pl=[],pd=[],pct=[];
+  MES_ORDER.forEach(m => {
+    const d = byMes[m];
+    if(!d.pc.length) return;
+    const N   = d.pc.length;
+    const vPc = d.pc.reduce((a,b)=>a+b,0)/N;
+    const vPl = d.pl.reduce((a,b)=>a+b,0)/N;
+    const vPd = d.pd.reduce((a,b)=>a+b,0)/N;
+    labels.push(SHORT[m]||m); mesNames.push(m);
+    pc.push(+vPc.toFixed(4)); pl.push(+vPl.toFixed(4));
+    pd.push(+vPd.toFixed(4)); pct.push(+(vPc+vPl).toFixed(4));
+  });
+  return {labels, mesNames, pc, pl, pd, pct};
+}
+
+function calcKPIs(data){
+  const M = calcMonthlySeries(data);
+  const n = M.labels.length;
+  const ZERO = {pc:0,pl:0,pd:0,pct:0,trendPc:0,trendPl:0,trendPd:0,trendPct:0,
+                mesAnterior:'—',nMeses:0,M:M};
+  if(!n) return ZERO;
+
+  // ═══════════════════════════════════════════════════════════════
+  // MEDIA ARITMÉTICA SIMPLE
+  //   Promedio = Σ(valor de cada mes) ÷ N meses con información
+  // ═══════════════════════════════════════════════════════════════
+  const S   = arr => arr.reduce((a,b)=>a+b, 0);
+  const avg = (arr,len) => S(arr)/len;
+
+  const promPc  = avg(M.pc,  n);
+  const promPl  = avg(M.pl,  n);
+  const promPd  = avg(M.pd,  n);
+  const promPct = promPc + promPl;
+
+  // ═══════════════════════════════════════════════════════════════
+  // VARIACIÓN: Promedio Histórico  vs  Valor del ÚLTIMO MES
+  //   Δ = Promedio(N meses) − Valor(último mes)
+  //   Muestra cuánto difiere el promedio del resultado más reciente
+  // ═══════════════════════════════════════════════════════════════
+  let diffPc=0, diffPl=0, diffPd=0, diffPct=0, ultimoMes='—';
+  if(n >= 1){
+    // Valor puntual del último mes disponible
+    const lastPc  = M.pc[n-1];
+    const lastPl  = M.pl[n-1];
+    const lastPd  = M.pd[n-1];
+    const lastPct = lastPc + lastPl;
+    // Δ = Promedio − Último mes  (positivo = promedio supera al último mes)
+    diffPc  = promPc  - lastPc;
+    diffPl  = promPl  - lastPl;
+    diffPd  = promPd  - lastPd;
+    diffPct = promPct - lastPct;
+    ultimoMes = M.mesNames[n-1];
+  }
+
+  return {pc:promPc, pl:promPl, pd:promPd, pct:promPct,
+          trendPc:diffPc, trendPl:diffPl, trendPd:diffPd, trendPct:diffPct,
+          ultimoMes, nMeses:n, M,
+          // valores del último mes (para mostrar en tarjeta)
+          lastPc:M.pc[n-1], lastPl:M.pl[n-1], lastPd:M.pd[n-1],
+          lastPct: n>=1 ? M.pc[n-1]+M.pl[n-1] : 0};
+}
+
+function arrow(v,invert=false){
+  if(v>0) return invert?{sym:'▲',cls:'up'}:{sym:'▲',cls:'up'};
+  if(v<0) return invert?{sym:'▼',cls:'down'}:{sym:'▼',cls:'down'};
+  return{sym:'●',cls:'neutral'};
+}
+
+function update(){
+  const data   = getFiltered();
+  const series = calcMonthlySeries(data);
+
+  // ── KPI RENDER ──────────────────────────────────────────
+  const kpis = calcKPIs(data);
+  const M    = kpis.M;
+  const ult  = kpis.ultimoMes;  // nombre del último mes
+
+  document.getElementById('kpiCont').textContent  = fmt(kpis.pc);
+  document.getElementById('kpiLib').textContent   = fmt(kpis.pl);
+  document.getElementById('kpiDet').textContent   = fmt(kpis.pd);
+  document.getElementById('kpiTotal').textContent = fmt(kpis.pct);
+
+  // Fórmula visible: (v1+v2+...+vN) = suma ÷ N = prom
+  const buildFormula = (arr, prom) => {
+    const suma = arr.reduce((a,b)=>a+b,0);
+    return `(${arr.map(v=>v.toFixed(2)+'%').join(' + ')}) = ${suma.toFixed(2)}% ÷ ${arr.length} = ${prom.toFixed(2)}%`;
+  };
+
+  // Render: Promedio vs Valor del último mes
+  const renderKPI = (arrId, trendId, subId, diff, lastVal, mesNombre, formula) => {
+    const pos  = diff >  0.005;
+    const neg  = diff < -0.005;
+    const zero = !pos && !neg;
+    document.getElementById(arrId).className   = 'arrow '+(zero?'neutral':pos?'up':'down');
+    document.getElementById(arrId).textContent = zero?'●':pos?'▲':'▼';
+    document.getElementById(trendId).innerHTML =
+      `<span style="font-weight:800;color:${pos?'#059669':neg?'#dc2626':'#94a3b8'};font-size:.9rem">${pos?'+':''}${diff.toFixed(2)}%</span>
+       <span style="font-size:.71rem;color:#64748b">&nbsp;Prom. vs <strong>${mesNombre}</strong>&nbsp;(${lastVal.toFixed(2)}%)</span>`;
+    document.getElementById(subId).textContent = formula;
+  };
+
+  renderKPI('arrCont', 'trendCont', 'subCont',
+    kpis.trendPc, kpis.lastPc, ult, buildFormula(M.pc, kpis.pc));
+  renderKPI('arrLib',  'trendLib',  'subLib',
+    kpis.trendPl, kpis.lastPl, ult, buildFormula(M.pl, kpis.pl));
+  renderKPI('arrDet',  'trendDet',  'subDet',
+    kpis.trendPd, kpis.lastPd, ult, buildFormula(M.pd, kpis.pd));
+
+  // Contiene Total
+  const dT=kpis.trendPct, posT=dT>0.005, negT=dT<-0.005, zeroT=!posT&&!negT;
+  document.getElementById('arrTotal').className   = 'arrow '+(zeroT?'neutral':posT?'up':'down');
+  document.getElementById('arrTotal').textContent = zeroT?'●':posT?'▲':'▼';
+  document.getElementById('trendTotal').innerHTML =
+    `<span style="font-weight:800;color:${posT?'#059669':negT?'#dc2626':'#94a3b8'};font-size:.9rem">${posT?'+':''}${dT.toFixed(2)}%</span>
+     <span style="font-size:.71rem;color:#64748b">&nbsp;Prom. vs <strong>${ult}</strong>&nbsp;(${kpis.lastPct.toFixed(2)}%)</span>`;
+  document.getElementById('subTotal').textContent =
+    buildFormula(M.pct, kpis.pct) + ` | Cont(${kpis.pc.toFixed(2)}%) + Lib(${kpis.pl.toFixed(2)}%)`;
+
+  // Subtitle
+  const t=document.getElementById('fTienda').value;
+  const c=document.getElementById('fCal').value;
+  document.getElementById('chartSubtitle').textContent=(t==='ALL'?'Todas las Tiendas':t)+' · '+(c==='ALL'?'Todas las Calificaciones':'Cal. '+c);
+
+  // Tabla resumen responde a filtros
+  renderResumen();
+
+  // CHART
+  const cdata={
+    labels:series.labels,
+    datasets:[
+      {label:'CONTIENE',data:series.pc,borderColor:'#f59e0b',backgroundColor:'transparent',pointBackgroundColor:'#f59e0b',pointBorderColor:'#fff',pointBorderWidth:2,pointRadius:7,pointHoverRadius:10,tension:0,borderWidth:3},
+      {label:'LIBERA',data:series.pl,borderColor:'#10b981',backgroundColor:'transparent',pointBackgroundColor:'#10b981',pointBorderColor:'#fff',pointBorderWidth:2,pointRadius:7,pointHoverRadius:10,tension:0,borderWidth:3},
+      {label:'DETERIORA',data:series.pd,borderColor:'#ef4444',backgroundColor:'transparent',pointBackgroundColor:'#ef4444',pointBorderColor:'#fff',pointBorderWidth:2,pointRadius:7,pointHoverRadius:10,tension:0,borderWidth:3},
+      {label:'CONTIENE TOTAL',data:series.pct,borderColor:'#2563eb',backgroundColor:'transparent',pointBackgroundColor:'#2563eb',pointBorderColor:'#fff',pointBorderWidth:2,pointRadius:8,pointHoverRadius:11,tension:0,borderWidth:3.5}
+    ]
+  };
+
+  if(chart){ chart.data=cdata; chart.update(); }
+  else{
+    const ctx=document.getElementById('markovChart').getContext('2d');
+    chart=new Chart(ctx,{
+      type:'line',
+      data:cdata,
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            backgroundColor:'rgba(15,23,42,.95)',borderColor:'rgba(255,255,255,.2)',borderWidth:1,
+            titleColor:'#f1f5f9',bodyColor:'#cbd5e1',padding:14,cornerRadius:10,
+            callbacks:{
+              label:ctx=>' '+ctx.dataset.label+': '+ctx.parsed.y.toFixed(2)+'%'
+            }
+          }
+        },
+        scales:{
+          x:{
+            grid:{
+              color:'rgba(0,0,0,.15)',
+              lineWidth:1,
+              drawBorder:true
+            },
+            border:{color:'rgba(0,0,0,.25)'},
+            ticks:{color:'#1a2332',font:{size:13,weight:'700'},maxRotation:0,minRotation:0}
+          },
+          y:{
+            suggestedMin:0,
+            suggestedMax:100,
+            grid:{
+              color:'rgba(0,0,0,.15)',
+              lineWidth:1,
+              drawBorder:true
+            },
+            border:{color:'rgba(0,0,0,.25)'},
+            ticks:{
+              color:'#1a2332',font:{size:12,weight:'600'},
+              callback:v=>v+'%',
+              stepSize:10
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // TABLE
+  const tbody=document.getElementById('tableBody');
+  tbody.innerHTML='';
+  document.getElementById('tableCount').textContent='('+data.length+' registros)';
+
+  // Group by mes for historical avg
+  const allAvg={};
+  MES_ORDER.forEach(m=>{
+    const subset=RAW.filter(r=>r.mes===m);
+    if(subset.length){
+      const avgPc=subset.reduce((a,b)=>a+b.pc,0)/subset.length;
+      const avgPl=subset.reduce((a,b)=>a+b.pl,0)/subset.length;
+      allAvg[m]=+(avgPc+avgPl).toFixed(2);
+    }
+  });
+
+  // Sort by tienda, mes, cal
+  const sorted=[...data].sort((a,b)=>{
+    if(a.tienda<b.tienda) return -1;
+    if(a.tienda>b.tienda) return 1;
+    return MES_ORDER.indexOf(a.mes)-MES_ORDER.indexOf(b.mes);
+  });
+
+  sorted.forEach(r=>{
+    const tr=document.createElement('tr');
+    const prom=allAvg[r.mes]||0;
+    tr.innerHTML=`
+      <td><strong>${r.tienda}</strong></td>
+      <td>${r.mes}</td>
+      <td><span class="badge-cal">${r.cal}</span></td>
+      <td class="val-lib">${r.pl.toFixed(2)}%</td>
+      <td class="val-cont">${r.pc.toFixed(2)}%</td>
+      <td class="val-det">${r.pd.toFixed(2)}%</td>
+      <td class="val-total">${r.pct.toFixed(2)}%</td>
+      <td class="val-prom">${prom.toFixed(2)}%</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function resetFilters(){
+  document.getElementById('fTienda').value='ALL';
+  document.getElementById('fCal').value='ALL';
+  document.getElementById('fMes').value='ALL';
+  document.getElementById('fAnio').value='ALL';
+  update();
+}
+
+// ═══════════════════════════════════════════════
+// TABLA RESUMEN: Promedio por Tienda × Tramo
+// ═══════════════════════════════════════════════
+const TIENDAS_ALL  = ['BABAHOYO','EL TRIUNFO','MILAGRO II','MILAGRO III','VINCES'];
+const TRAMOS_ALL   = ['AA','A','B','C','D','E','E1','E2','E3'];
+const TRAMO_LABEL  = {'AA':'1_AA','A':'2_A','B':'3_B','C':'4_C','D':'5_D',
+                      'E':'6_E','E1':'7_E1','E2':'8_E2','E3':'9_E3'};
+
+function renderResumen(){
+  // ══════════════════════════════════════════════════════════
+  // Usa los mismos filtros de Tienda, Calificación, Mes, Año
+  // Para cada Tienda × Tramo visible:
+  //   Promedio = Σ(valor de cada mes filtrado) ÷ N meses
+  // ══════════════════════════════════════════════════════════
+  const fTienda = document.getElementById('fTienda').value;
+  const fCal    = document.getElementById('fCal').value;
+  const fMes    = document.getElementById('fMes').value;
+  const fAnio   = document.getElementById('fAnio').value;
+
+  // Tiendas y tramos a mostrar según filtros
+  const tiendas = fTienda === 'ALL' ? TIENDAS_ALL : [fTienda];
+  const tramos  = fCal    === 'ALL' ? TRAMOS_ALL  : [fCal];
+
+  const tbody = document.getElementById('resumenBody');
+  let html = '';
+  let filas = 0;
+
+  tiendas.forEach(t => {
+    tramos.forEach(cal => {
+      // Filtrar registros de esta tienda+tramo respetando filtros de mes/año
+      const rows = RAW.filter(r => {
+        if(r.tienda !== t || r.cal !== cal) return false;
+        if(fMes  !== 'ALL' && r.mes !== fMes)       return false;
+        if(fAnio !== 'ALL' && !r.mes.includes(fAnio)) return false;
+        return true;
+      });
+
+      if(!rows.length) return;
+
+      // Agrupar por mes → 1 valor por mes (media aritmética simple)
+      const byMes = {};
+      MES_ORDER.forEach(m => byMes[m] = []);
+      rows.forEach(r => { if(byMes[r.mes]) byMes[r.mes].push(r); });
+
+      const vals_pc = [], vals_pl = [];
+      MES_ORDER.forEach(m => {
+        const d = byMes[m];
+        if(d.length){ vals_pc.push(d[0].pc); vals_pl.push(d[0].pl); }
+      });
+
+      const N = vals_pc.length;
+      if(!N) return;
+
+      const promPC = vals_pc.reduce((a,b)=>a+b,0) / N;
+      const promPL = vals_pl.reduce((a,b)=>a+b,0) / N;
+
+      // Color de fondo según % Contiene
+      const bgCont = promPC >= 70 ? '#d1fae5' : promPC >= 40 ? '#fef9c3' : '#fee2e2';
+      const txCont = promPC >= 70 ? '#065f46' : promPC >= 40 ? '#713f12' : '#991b1b';
+      const bgLib  = '#f0fdf4';
+
+      // Mostrar tienda solo en primera fila del grupo
+      const isFirstTramo = tramos.indexOf(cal) === 0;
+      const tiendaCell = isFirstTramo
+        ? `<td rowspan="${tramos.length}" style="font-weight:800;color:#1a2332;background:#f8fafc;
+             border-right:2px solid #cbd5e1;vertical-align:middle;font-size:.82rem">${t}</td>`
+        : '';
+
+      // Solo añadir tiendaCell si es primera fila del grupo de esta tienda
+      // Para evitar rowspan en filtrado parcial, simplemente repetimos el nombre
+      html += `<tr style="border-bottom:1px solid #e2e8f0">
+        <td style="font-weight:700;color:#1a2332;background:#f8fafc;
+            border-right:2px solid #cbd5e1;font-size:.81rem;padding:9px 12px">${t}</td>
+        <td style="text-align:center;font-weight:700;color:#1d4ed8;
+            background:#eff6ff;padding:9px 12px">${TRAMO_LABEL[cal]}</td>
+        <td style="text-align:center;background:${bgCont};color:${txCont};
+            font-weight:800;font-size:.88rem;padding:9px 12px">
+          ${promPC.toFixed(2)}%
+          <div style="font-size:.68rem;color:#64748b;font-weight:500;margin-top:2px">
+            Σ÷${N} mes${N>1?'es':''}
+          </div>
+        </td>
+        <td style="text-align:center;background:${bgLib};color:#059669;
+            font-weight:800;font-size:.88rem;padding:9px 12px">
+          ${promPL.toFixed(2)}%
+          <div style="font-size:.68rem;color:#64748b;font-weight:500;margin-top:2px">
+            Σ÷${N} mes${N>1?'es':''}
+          </div>
+        </td>
+      </tr>`;
+      filas++;
+    });
+
+    // Fila subtotal por tienda (solo si hay más de un tramo)
+    if(tramos.length > 1){
+      const rowsTienda = RAW.filter(r => {
+        if(r.tienda !== t) return false;
+        if(fMes  !== 'ALL' && r.mes !== fMes)        return false;
+        if(fAnio !== 'ALL' && !r.mes.includes(fAnio)) return false;
+        return true;
+      });
+      if(rowsTienda.length){
+        // Promedio de todos los tramos para esta tienda
+        const byMesTot = {}; MES_ORDER.forEach(m=>byMesTot[m]={pc:[],pl:[]});
+        rowsTienda.forEach(r=>{ if(byMesTot[r.mes]){byMesTot[r.mes].pc.push(r.pc);byMesTot[r.mes].pl.push(r.pl);} });
+        const vPc=[], vPl=[];
+        MES_ORDER.forEach(m=>{ const d=byMesTot[m]; if(d.pc.length){vPc.push(d.pc.reduce((a,b)=>a+b,0)/d.pc.length); vPl.push(d.pl.reduce((a,b)=>a+b,0)/d.pl.length);} });
+        if(vPc.length){
+          const sPC=(vPc.reduce((a,b)=>a+b,0)/vPc.length).toFixed(2);
+          const sPL=(vPl.reduce((a,b)=>a+b,0)/vPl.length).toFixed(2);
+          html+=`<tr style="background:#e0e7ff;border-top:2px solid #6366f1">
+            <td style="font-weight:800;color:#3730a3;padding:8px 12px" colspan="2">📊 Subtotal ${t}</td>
+            <td style="text-align:center;font-weight:900;color:#1d4ed8;padding:8px 12px">${sPC}%</td>
+            <td style="text-align:center;font-weight:900;color:#059669;padding:8px 12px">${sPL}%</td>
+          </tr>`;
+        }
+      }
+    }
+  });
+
+  // Fila TOTAL ZONA (si hay múltiples tiendas)
+  if(tiendas.length > 1){
+    const rowsAll = RAW.filter(r => {
+      if(fMes  !== 'ALL' && r.mes !== fMes)        return false;
+      if(fAnio !== 'ALL' && !r.mes.includes(fAnio)) return false;
+      return true;
+    });
+    if(rowsAll.length){
+      const byMesAll={}; MES_ORDER.forEach(m=>byMesAll[m]={pc:[],pl:[]});
+      rowsAll.forEach(r=>{ if(byMesAll[r.mes]){byMesAll[r.mes].pc.push(r.pc);byMesAll[r.mes].pl.push(r.pl);} });
+      const vPc=[],vPl=[];
+      MES_ORDER.forEach(m=>{ const d=byMesAll[m]; if(d.pc.length){vPc.push(d.pc.reduce((a,b)=>a+b,0)/d.pc.length);vPl.push(d.pl.reduce((a,b)=>a+b,0)/d.pl.length);} });
+      if(vPc.length){
+        const gPC=(vPc.reduce((a,b)=>a+b,0)/vPc.length).toFixed(2);
+        const gPL=(vPl.reduce((a,b)=>a+b,0)/vPl.length).toFixed(2);
+        html+=`<tr style="background:#1a3a6b;border-top:3px solid #0d2140">
+          <td style="font-weight:900;color:#fff;padding:10px 12px;background:#0d2140" colspan="2">🏆 PROMEDIO ZONA MILAGRO</td>
+          <td style="text-align:center;font-weight:900;color:#fbbf24;font-size:.9rem;padding:10px 12px">${gPC}%</td>
+          <td style="text-align:center;font-weight:900;color:#6ee7b7;font-size:.9rem;padding:10px 12px">${gPL}%</td>
+        </tr>`;
+      }
+    }
+  }
+
+  if(!filas){
+    html = `<tr><td colspan="4" style="text-align:center;padding:20px;color:#94a3b8;font-style:italic">
+      Sin datos para los filtros seleccionados</td></tr>`;
+  }
+
+  tbody.innerHTML = html;
+}
+
+function resizeChart(w){
+  document.getElementById('widthLabel').textContent=w+'px';
+  document.querySelector('.chart-wrapper').style.maxWidth=w+'px';
+  if(chart) chart.resize();
+}
+function resizeChartH(h){
+  document.getElementById('heightLabel').textContent=h+'px';
+  document.querySelector('.chart-wrapper').style.height=h+'px';
+  if(chart) chart.resize();
+}
+
+// INIT
+update();
+renderResumen();
+</script>
+</body>
+</html>
